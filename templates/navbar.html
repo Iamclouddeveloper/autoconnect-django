@@ -1,0 +1,170 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Navbar</title>
+
+<!-- Bootstrap CSS -->
+<link rel="stylesheet" href="{% static 'bootstrap/bootstrap.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+
+<body>
+
+
+<nav class="navbar navbar-expand-lg custom-navbar ">
+  
+  <div class="container-fluid">
+
+    <a class="navbar-brand text-white" href="https://renixauto.com">
+      Renix Auto
+    </a>
+
+   <button class="navbar-toggler" id="navbarToggle"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#navbarNav"
+        aria-expanded="false">
+  <span class="navbar-toggler-icon"></span>
+</button>
+
+
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto gap-md-4 me-md-3">
+
+        <li class="nav-item">
+           <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}"
+            href="{% url 'index' %}">
+            Home
+          </a>
+        </li>
+
+        {% if request.user.is_authenticated %}
+        {% if request.user.role == 'super_admin' or request.user.role == 'sub_admin' %}
+          <li class="nav-item ">
+            <a class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}" href="{% url 'admin_dashboard' %}">Dashboard</a>
+          </li>
+          {%else%}
+                  <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'my_vehicle' %}active{% endif %}" href="{% url 'my_vehicle' %}">Dashboard</a>
+        </li>
+        {% endif %}
+
+
+          
+
+       
+        {% else %}
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}"
+            href="{% url 'login' %}">
+            Sign In
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'register' %}active{% endif %}"
+            href="{% url 'register' %}">
+            Sign Up
+          </a>
+        </li>
+        {% endif %}
+
+        
+
+        {% if request.user.is_authenticated %}
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'logout' %}">Sign Out</a>
+        </li>
+        {% endif %}
+
+      </ul>
+    </div>
+  </div>
+</nav>
+
+
+
+  {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+            <div class="alert alert-light shadow-sm border-0 rounded-3 d-flex align-items-center justify-content-between flash-message flash-{{ message.tags }}">
+                
+                <div class="d-flex align-items-center">
+                
+                <!-- ICON -->
+                {% if message.tags == 'error' %}
+                    <div class="bg-danger-subtle text-danger rounded-circle d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;">
+                    <i class="fa fa-exclamation"></i>
+                    </div>
+                {% elif message.tags == 'success' %}
+                    <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;">
+                    <i class="fa fa-check"></i>
+                    </div>
+                {% elif message.tags == 'warning' %}
+                    <div class="bg-warning-subtle text-warning rounded-circle d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;">
+                    <i class="fa fa-triangle-exclamation"></i>
+                    </div>
+                {% else %}
+                    <div class="bg-info-subtle text-info rounded-circle d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;">
+                    <i class="fa fa-info"></i>
+                    </div>
+                {% endif %}
+
+                <!-- TEXT -->
+                <div class="fw-semibold text-secondary">
+                    {{ message }}
+                </div>
+                </div>
+
+                <!-- CLOSE BUTTON -->
+                <button type="button" class="btn-close ms-3 close-flash"></button>
+
+            </div>
+            {% endfor %}
+        </div>
+  {% endif %}
+
+
+
+
+
+ <script src="{%  static 'js/script.js' %}"></script>
+<script src="{% static 'bootstrap/bootstrap.bundle.min.js' %}"></script>
+<script>
+  const toggler = document.getElementById('navbarToggle');
+  const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+
+  // Toggle hamburger animation
+  toggler.addEventListener('click', function () {
+    this.classList.toggle('open');
+  });
+
+  // Close menu & reset hamburger on link click (mobile)
+  navLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      toggler.classList.remove('open');
+    });
+  });
+
+
+  setTimeout(function () {
+    document.querySelectorAll('.flash-message').forEach(function (message) {
+        message.classList.add('fade');
+        setTimeout(() => message.remove(), 300);
+        });
+    }, 10000);
+
+    // Manual close
+    document.querySelectorAll('.close-flash').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+        this.closest('.flash-message').remove();
+        });
+    });
+</script>
+
+</body>
+</html>

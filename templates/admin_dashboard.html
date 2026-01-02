@@ -1,0 +1,477 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Console</title>
+    <link rel="stylesheet" href="{% static 'bootstrap/bootstrap.min.css' %}">
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+   
+    <link rel="stylesheet"
+          href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+    
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        
+                
+        
+        /* TABLE */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px !important;
+            text-align: left !important;
+        }
+        th {
+            background: var(--primary);
+            color: #fff;
+        }
+        tr:nth-child(even) { background: #eef2f6   !important; }
+        
+        tr:hover { background: #e6f0f7 !important; }
+
+                
+        .dataTables_wrapper .dataTables_filter input,
+        .dataTables_wrapper .dataTables_length select {
+            border-radius: 8px;
+            border: 1px solid var(--border-light );
+            padding: 4px 8px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            border-radius: 8px !important;
+            padding: 4px 10px;
+            margin: 2px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: linear-gradient(
+            135deg,
+            var(--primary) 0%,
+            var(--primary-dark) 100%
+        );
+            color: #fff !important;
+            border: none !important;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #e0f2fe !important;
+            color: #0f172a !important;
+        }
+
+        /* ===============================
+        SORT ICON SPACING
+        ================================ */
+        .dataTables_wrapper .sorting::before,
+        .dataTables_wrapper .sorting::after {
+            display: block;
+            margin: 4px 0;
+        }
+        /* Hide sort icons for disabled columns */
+        #usersTable th.sorting_disabled::before,
+        #usersTable th.sorting_disabled::after {
+            display: none !important;
+        }
+
+
+    </style>
+</head>
+<body class="bg-primary">
+
+{% include 'side_navbar.html' %}
+
+    
+
+
+<div class="container card mt-5 py-4 rounded-3">
+
+    <h1 style="text-align: center;">Admin Dashboard</h1>
+
+    <div class="input-container mb-3">
+            <i class="fa fa-search" aria-hidden="true"></i>
+            <input type="text" id="searchInput" class="form-control  px-5 w-100" placeholder="Search...">
+       </div>
+    <div class="table-responsive">
+        
+        {% if request.user.role == 'super_admin' %}
+        <button id="deleteBtn" class="btn btn-danger mb-3" disabled>
+            Delete Selected
+        </button>
+        {% endif %}
+
+
+    <table id="usersTable">
+        <thead>
+            <tr>
+                
+                {% if request.user.role == 'super_admin' %}
+                <th>
+                    <input type="checkbox" id="selectAll">
+                </th>
+                {% endif %}
+                <th>Username</th>
+                <th>Email</th>
+
+                {% if request.user.role == 'super_admin' %}
+                    <th>Role</th>
+                {% endif %}
+
+                <th>Status</th>
+                <th>Blocked</th>
+                <th>Date Joined</th>
+                <th>Last Login</th>
+                
+                <th>Actions</th>
+
+            </tr>
+        </thead>
+
+        <tbody>
+        {% for user in users %}
+            <tr>
+                {% if request.user.role == 'super_admin' %}
+                <td>
+                    <input type="checkbox" class="userCheck" value="{{ user.id }}">
+                </td>
+                {% endif %}
+
+                
+                <td class="username">{{ user.username }}</td>
+                <td class="email">{{ user.email }}</td>
+
+                {% if request.user.role == 'super_admin' %}
+                    <td class="role">{{ user.role }}</td>
+                {% endif %}
+
+                <td>
+                    {% if user.is_active %}
+                        <span class="status active">Active</span>
+                    {% else %}
+                        <span class="status inactive">Inactive</span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    {% if user.is_blocked %}
+                        <span class="blocked yes">Yes</span>
+                    {% else %}
+                        <span class="blocked no">No</span>
+                    {% endif %}
+                </td>
+
+                <td data-order="{{ user.date_joined|date:'Y-m-d H:i:s' }}">{{ user.date_joined|date:"d-M-Y h:i A" }}</td>
+                <td data-order="{{ user.date_joined|date:'Y-m-d H:i:s' }}">{{ user.last_login|date:"d-M-Y h:i A" }}</td>
+                <td class="text-nowrap">
+                    <form action="{% url 'toggle_block_user' user.id %}" method="POST" style="display:inline;">
+                        {% csrf_token %}
+
+                        {% if request.user.role == 'super_admin' %}
+                            <button  type="button"class="btn btn-primary btn-sm editUser" data-id="{{ user.id }}">
+                                Edit
+                            </button>
+
+                            <button type="button" class="btn btn-success btn-sm saveUser d-none" data-id="{{ user.id }}">
+                                Save
+                            </button>
+
+                            <button type="button" class="btn btn-secondary btn-sm cancelEdit d-none">
+                                Cancel
+                            </button>
+                        {% endif %}
+
+                        {% if user.is_blocked %}
+                            <button  class="btn btn-success btn-sm">
+                                Unblock
+                            </button>
+                        {% else %}
+                            <button  class="btn btn-danger btn-sm">
+                                Block
+                            </button>
+                        {% endif %}
+                    </form>
+                </td>
+
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+</div>
+
+
+
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0 rounded-4">
+
+      <div class="modal-header border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-danger-subtle text-danger rounded-circle d-flex align-items-center justify-content-center me-2" style="width:36px;height:36px;">
+            <i class="fa fa-exclamation"></i>
+          </div>
+          <h5 class="modal-title fw-semibold">Confirm Delete</h5>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p id="deleteCount" class="fw-medium mb-1"></p>
+        <p class="text-muted small mb-0">
+          This action is permanent and cannot be undone.
+        </p>
+      </div>
+
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button id="confirmDelete" type="button" class="btn btn-danger">
+          Delete
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="{% static 'bootstrap/bootstrap.bundle.min.js' %}"></script>
+
+<script>
+$(document).ready(function () {
+
+    // Initialize DataTable ONCE
+    const table = $('#usersTable').DataTable({
+        pageLength: 10,
+        lengthChange: false,
+        ordering: true,
+        searching: true,
+        dom: 'rt<"bottom"ip>', 
+        language: {
+            paginate: {
+                previous: "<",
+                next: ">"
+            }
+        },
+        columnDefs: [
+            {% if request.user.role == 'super_admin' %}
+                { orderable: false, targets: [0, -1] },  
+            {% else %}
+                { orderable: false, targets: -1 },      
+            {% endif %}
+        ]
+    });
+
+    
+    $('#searchInput').on('input', function () {
+        table.search(this.value).draw();
+    });
+
+
+
+    
+
+    // store ids globally so paging doesn't lose them
+    let selectedIds = new Set();
+
+    // toggle all
+    $('#selectAll').on('change', function () {
+        const checked = this.checked;
+
+        $('input.userCheck', table.rows().nodes()).each(function(){
+            this.checked = checked;
+            if(checked){
+                selectedIds.add(this.value);
+            } else {
+                selectedIds.clear();
+            }
+        });
+
+        toggleDeleteBtn();
+    });
+
+    // row checkbox
+    $(document).on('change', '.userCheck', function(){
+        if(this.checked){
+            selectedIds.add(this.value);
+        } else {
+            selectedIds.delete(this.value);
+            $('#selectAll').prop('checked', false);
+        }
+        toggleDeleteBtn();
+    });
+
+    function toggleDeleteBtn(){
+        $('#deleteBtn').prop('disabled', selectedIds.size === 0);
+    }
+
+    // open modal
+    
+    $('#deleteBtn').on('click', function(){
+        $('#deleteCount').text(
+            `Are you sure you want to delete ${selectedIds.size} user(s)?`
+        );
+
+        const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+        modal.show();
+    });
+
+
+    // confirm delete
+    $('#confirmDelete').on('click', function(){
+
+        $.ajax({
+            url: "{% url 'delete_users' %}",
+            method: "POST",
+            data: {
+                'user_ids[]': Array.from(selectedIds),
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(res){
+                const modal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
+                modal.hide();
+                location.reload();
+            },
+            error: function(xhr){
+                alert(xhr.responseJSON.error || "Error deleting users");
+            }
+        });
+
+    });
+
+
+    // ---------- INLINE EDIT ----------
+$(document).on("click", ".editUser", function () {
+
+    let row = $(this).closest("tr");
+    let id = $(this).data("id");
+
+    let username = row.find(".username").text().trim();
+    let email = row.find(".email").text().trim();
+    let role = row.find(".role").text().trim();
+
+    // store old values
+    row.data("old-username", username);
+    row.data("old-email", email);
+    row.data("old-role", role);
+
+    // replace text with inputs
+    row.find(".username").html(`<input class="form-control form-control-sm edit-username" value="${username}">`);
+    row.find(".email").html(`<input class="form-control form-control-sm edit-email" value="${email}">`);
+
+    row.find(".role").html(`
+        <select class="form-select form-select-sm edit-role">
+            <option value="super_admin" ${role==="super_admin"?"selected":""}>Super Admin</option>
+            <option value="sub_admin" ${role==="sub_admin"?"selected":""}>Sub Admin</option>
+            <option value="user" ${role==="user"?"selected":""}>User</option>
+        </select>
+    `);
+
+    // toggle buttons
+    row.find(".editUser").addClass("d-none");
+    row.find(".saveUser,.cancelEdit").removeClass("d-none");
+});
+
+$(document).on("click", ".cancelEdit", function () {
+
+    let row = $(this).closest("tr");
+
+    row.find(".username").text(row.data("old-username"));
+    row.find(".email").text(row.data("old-email"));
+    row.find(".role").text(row.data("old-role"));
+
+    row.find(".saveUser,.cancelEdit").addClass("d-none");
+    row.find(".editUser").removeClass("d-none");
+});
+
+
+$(document).on("click", ".saveUser", function () {
+
+    let row = $(this).closest("tr");
+    let id = $(this).data("id");
+
+    let usernameInput = row.find(".edit-username");
+    let emailInput = row.find(".edit-email");
+    let role = row.find(".edit-role").val();
+
+    let username = usernameInput.val().trim();
+    let email = emailInput.val().trim();
+
+    // Remove previous error messages
+    row.find(".error-message").remove();
+
+    // ===== INLINE VALIDATION =====
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let hasError = false;
+
+    if (!username) {
+        usernameInput.after('<div class="error-message text-danger small mt-1">Username cannot be empty</div>');
+        hasError = true;
+    } else if (username.length < 3 || username.length > 15) {
+        usernameInput.after('<div class="error-message text-danger small mt-1">Username must be 3-15 characters</div>');
+        hasError = true;
+    }
+
+    if (!email) {
+        emailInput.after('<div class="error-message text-danger small mt-1">Email cannot be empty</div>');
+        hasError = true;
+    } else if (!emailRegex.test(email)) {
+        emailInput.after('<div class="error-message text-danger small mt-1">Invalid email format</div>');
+        hasError = true;
+    }
+
+    if (hasError) return; // stop if validation fails
+    // ===== END INLINE VALIDATION =====
+
+    $.ajax({
+        url: "{% url 'update_user' %}",
+        method: "POST",
+        data: {
+            id: id,
+            username: username,
+            email: email,
+            role: role,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        success: function () {
+            row.find(".username").text(username);
+            row.find(".email").text(email);
+            row.find(".role").text(role);
+
+            row.find(".saveUser,.cancelEdit").addClass("d-none");
+            row.find(".editUser").removeClass("d-none");
+        },
+        error: function(xhr){
+            let error = xhr.responseJSON?.error || "Update failed";
+            // Display backend error under username as a generic place
+            usernameInput.after(`<div class="error-message text-danger small mt-1">${error}</div>`);
+        }
+    });
+});
+
+
+
+});
+</script>
+
+
+</body>
+</html>

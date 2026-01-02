@@ -1,0 +1,291 @@
+{% load static%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}"> <!-- Link to your CSS file -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Toggle editability based on the checkbox
+            document.getElementById('edit-profile').addEventListener('change', function () {
+                const isEditable = this.checked;
+
+                document.querySelectorAll('.editable').forEach(input => {
+                    input.readOnly  = !isEditable;
+                });
+
+                
+                document.getElementById('profile-image-upload').disabled = !isEditable;
+
+                document.getElementById('update-profile-btn').disabled = !isEditable;
+
+            });
+
+            document.querySelectorAll('.password-icon').forEach(icon => {
+                icon.addEventListener('click', function () {
+                    const passwordField = document.getElementById(this.dataset.target);
+                    if (passwordField.type === 'password') {
+                        passwordField.type = 'text';
+                        this.classList.remove('fa-eye');
+                        this.classList.add('fa-eye-slash');
+                        this.setAttribute('title', 'Hide password');
+                    } else {
+                        passwordField.type = 'password';
+                        this.classList.remove('fa-eye-slash');
+                        this.classList.add('fa-eye');
+                        this.setAttribute('title', 'Show password');
+                    }
+                });
+            });
+        });
+
+        function disableCopyPasteCut(event) {
+            event.preventDefault();
+            
+        }
+        window.onload = function () {
+            
+            var inputFields = document.querySelectorAll('input');
+            
+            
+            inputFields.forEach(function(input) {
+                input.addEventListener('copy', disableCopyPasteCut);
+                input.addEventListener('paste', disableCopyPasteCut);
+                input.addEventListener('cut', disableCopyPasteCut);
+            });
+        };
+
+        
+
+    </script>
+</head>
+<body class="bg-primary">
+    <!-- Header navbar -->
+    {% include 'side_navbar.html' %}
+
+    
+    
+   <section >
+        <div class="container my-5" data-animate="zoom-in">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card p-4">
+                        <h1 >User Profile</h1>
+
+                        <form id="profile-form"  method="post" enctype="multipart/form-data">
+                            {% csrf_token%}
+                            <div class="text-center mb-3">
+
+                                <label for="profile-image-upload" class="profile-pic">
+
+                                     {% if request.user.profile_photo %}
+                                        <img src="{{ request.user.profile_photo.url }}"
+                                            class="rounded-circle shadow-sm"
+                                            width="120" height="120">
+                                    {% else %}
+                                        <i class="fa fa-user-circle text-secondary"
+                                        style="font-size:120px; width:120px; height:120px;"></i>
+
+                                    {% endif %}
+
+                                </label>
+
+                                <input type="file"
+                                    id="profile-image-upload"
+                                    name="profile_photo"
+                                    class="d-none"
+                                    accept="image/*">
+
+                                
+
+                            </div>
+                            <div class="text-center mb-3">
+                            {% if request.user.profile_photo %}
+                                    <button type="submit"
+                                            name="remove_photo"
+                                            value="1"
+                                            class="btn btn-danger btn-sm mt-2"
+                                            onclick="return confirm('Remove profile photo?')">
+                                        <i class="fa fa-trash"></i> 
+                                    </button>
+                                {% endif %}
+                                </div>
+
+                            <div class="form-group">
+                                <label for="username">Username</label>
+                                <div class="input-container">
+                                    <i class="fa fa-user" aria-hidden="true"></i>
+                                    <input style="padding-left:30px;" type="text" id="username" name="username" class="editable"  minlength="3" maxlength="15" placeholder="john123"  pattern="^[a-zA-Z0-9]{3,15}$" title="username must be alphanumeric,3-15 characters, no special characters or spaces. Example: john123" value="{{ request.user.username }}" readonly onkeyup="validateUsername()">
+                                </div>
+                            </div>
+                            <div id="username-status" class="small mb-2 "></div>
+                            
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <div class="input-container">
+                                    <i class="fa fa-envelope" aria-hidden="true"></i>
+                                    <input style="padding-left:30px;" type="email" id="email" name="email" class="editable"  placeholder="john.123@example.com" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"  title="apologize, You couldn't  Update email" value="{{ request.user.email }}" readonly onkeyup="validateEmail()">
+                                </div>
+                            </div>
+                            <div id="email-status" class="small mb-2 "></div>
+                            
+                            <div class="form-group password-container">
+                                <label for="password">Password</label>
+                                <div class="input-container">
+                                    <i class="fa fa-lock" aria-hidden="true"></i>
+                                    <input style="padding-left:30px;" type="password" id="password" name="password" class="editable"  minlength="8" placeholder="Enter your password" pattern="(?=.*\d)(?=.*[!@#$%^&*]).{8,}" title="Minimum length: 8 characters, must include at least one number and one special character. Example: john123!"   onkeyup="validatePassword()">
+                                    <i class="fas fa-eye password-icon" data-target="password" title="Show password"></i>
+                                </div>
+                            </div>
+                            <div id="password-status" class="small mb-2 "></div>
+                            
+                            <div class="form-group password-container">
+                                <label for="confirm-password">Confirm Password</label>
+                                <div class="input-container">
+                                    <i class="fa fa-lock" aria-hidden="true"></i>
+                                    <input style="padding-left:30px;" type="password" id="confirm-password" name="confirm_password" class="editable" minlength="8" placeholder="Confirm your password"  pattern="(?=.*\d)(?=.*[!@#$%^&*])(?!.*\s).{8,}" title="Must match the password entered above. Example: john123!"   onkeyup="validateConfirmPassword()" >
+                                    <i class="fas fa-eye password-icon" data-target="confirm-password" title="Show password"></i>
+                                </div>
+                            </div>
+                            <div id="password-match-status" class="small mb-2 "></div>
+                            
+
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input style="width:auto;" class="checkbox" type="checkbox" id="edit-profile"> Enable Editing
+                                </label>                
+                            </div>
+
+                            <div class="form-group">
+                                <button type="submit"  id="update-profile-btn" class="button-primary p-2 w-100" disabled>Update Profile</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    
+<script>
+function showStatus(element, message, type = '') {
+  element.textContent = message;
+  element.classList.remove('text-success', 'text-danger');
+  if (type === 'success') element.classList.add('text-success');
+  if (type === 'error') element.classList.add('text-danger');
+}
+
+function validateUsername() {
+  const username = document.getElementById('username').value;
+  const status = document.getElementById('username-status');
+  const pattern = /^[a-zA-Z0-9]{3,15}$/;
+
+  if (!username) {
+    showStatus(
+      status,
+      'Username must be alphanumeric, 3-15 characters, no special characters or spaces.',
+      'error'
+    );
+    return;
+  }
+
+  if (pattern.test(username)) {
+    showStatus(status, 'Username meets the criteria', 'success');
+  } else {
+    showStatus(
+      status,
+      'Username must be alphanumeric, 3-15 characters, no special characters or spaces.',
+      'error'
+    );
+  }
+}
+
+function validateEmail() {
+  const email = document.getElementById('email').value;
+  const status = document.getElementById('email-status');
+  const pattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+  if (!email) {
+      showStatus(
+      status,
+      'Enter valid email. Example: john.123@example.com.',
+      'error'
+      );
+      return;
+  }
+
+  if (pattern.test(email)) {
+      showStatus(status, 'Email meets the criteria', 'success');
+  } else {
+      showStatus(
+      status,
+      'Invalid email format. Example: john.123@example.com',
+      'error'
+      );
+  }
+}
+
+function validatePassword() {
+  const password = document.getElementById('password').value;
+  const status = document.getElementById('password-status');
+  const pattern = /^(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+
+  if (!password) {
+    showStatus(
+      status,
+      'Minimum length: 8 characters. Must include at least one number and one special character.',
+      'error'
+    );
+    return;
+  }
+
+  if (pattern.test(password)) {
+    showStatus(status, 'Password meets the criteria', 'success');
+  } else {
+    showStatus(
+      status,
+      'Minimum length: 8 characters. Must include at least one number and one special character.',
+      'error'
+    );
+  }
+}
+
+function validateConfirmPassword() {
+  const password = document.getElementById('password').value;
+  const confirmPassword = document.getElementById('confirm-password').value;
+  const status = document.getElementById('password-match-status');
+
+  if (!confirmPassword) {
+    showStatus(
+      status,
+      'Must match the password above. Example: john123!',
+      'error'
+    );
+    return;
+  }
+
+  if (password === confirmPassword) {
+    showStatus(status, 'Passwords match', 'success');
+  } else {
+    showStatus(status, 'Passwords do not match', 'error');
+  }
+}
+
+document.getElementById('username').addEventListener('focus', validateUsername);
+document.getElementById('username').addEventListener('keyup', validateUsername);
+
+document.getElementById('email').addEventListener('focus', validateEmail);
+document.getElementById('email').addEventListener('keyup', validateEmail);
+
+document.getElementById('password').addEventListener('focus', validatePassword);
+document.getElementById('password').addEventListener('keyup', validatePassword);
+
+document.getElementById('confirm-password').addEventListener('focus', validateConfirmPassword);
+document.getElementById('confirm-password').addEventListener('keyup', validateConfirmPassword);
+</script>
+    
+</body>
+</html>

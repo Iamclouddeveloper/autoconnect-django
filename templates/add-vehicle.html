@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Vehicle</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+
+<body>
+
+{% include 'side_navbar.html' %}
+
+    <section data-animate="fade-in">
+        <div class="container my-5" >
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card p-4">
+                        <h1 style="text-align: center;">Add Vehicle</h1>
+
+                        <!-- Django form -->
+                        <form id="addVehicleForm" method="post" action="{% url 'add_vehicle' %}">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="vrn">Enter Vehicle Registration Number:</label>
+                                <input type="text" id="vrn" name="vrn" required placeholder="Enter VRN number">
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="button-primary w-100">Submit</button>
+                            </div>
+                        </form>
+
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Status Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0">
+      <div class="modal-header text-white" id="statusModalHeader">
+        <h5 class="modal-title">
+          <i id="statusModalIcon" class="me-2"></i>
+          <span id="statusModalTitle"></span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center">
+        <p id="statusModalMessage" class="fw-semibold mb-0"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<script>
+    // auto uppercase
+    document.getElementById('vrn').addEventListener('input', function () {
+        this.value = this.value.trim().toUpperCase();
+    });
+
+    // Django CSRF helper
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const csrftoken = getCookie('csrftoken');
+
+    function showStatusModal(type, message) {
+        const header = document.getElementById('statusModalHeader');
+        const title = document.getElementById('statusModalTitle');
+        const icon = document.getElementById('statusModalIcon');
+        const body = document.getElementById('statusModalMessage');
+
+        header.classList.remove('bg-success', 'bg-danger');
+
+        if (type === 'success') {
+            header.classList.add('bg-success');
+            title.innerText = 'Success';
+            icon.className = 'bi bi-check-circle me-2';
+        } else {
+            header.classList.add('bg-danger');
+            title.innerText = 'Error';
+            icon.className = 'bi bi-exclamation-circle me-2';
+        }
+
+        body.innerText = message;
+
+        const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+        modal.show();
+    }
+
+    document.getElementById('addVehicleForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const vrn = document.getElementById('vrn').value;
+       
+
+        try {
+            const response = await fetch("{% url 'add_vehicle' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrftoken
+                },
+                body: JSON.stringify({ vrn: vrn })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showStatusModal('success', data.message);
+
+                setTimeout(() => {
+                    window.location.href = "{% url 'my_vehicle' %}";
+                }, 1500);
+            } else {
+                showStatusModal('error', data.error || 'Something went wrong');
+            }
+        } catch (err) {
+            showStatusModal('error', 'Unexpected error occurred. Please try again.');
+        }
+    });
+
+    
+
+</script>
+
+</body>
+</html>

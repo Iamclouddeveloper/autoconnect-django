@@ -1,0 +1,302 @@
+{%load static%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoConnect - Signin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}"> <!-- Link to your CSS file -->
+    <style>
+        
+    .scene {
+    position: fixed;
+    inset: 0;
+    perspective: 1400px;
+    z-index: 0;
+    overflow: hidden;
+    }
+
+    .cube-field {
+    position: absolute;
+    width: 220%;
+    height: 220%;
+    left: -60%;
+    top: -60%;
+    display: grid;
+    grid-template-columns: repeat(16, 130px);
+    grid-auto-rows: 130px;
+    gap: 10px;
+    transform-style: preserve-3d;
+    transform: rotateX(60deg) rotateZ(45deg);
+    }
+
+    .cube {
+    position: relative;
+    transform-style: preserve-3d;
+    animation: cube-float 18s ease-in-out infinite;
+    }
+
+    .cube::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    background: linear-gradient(
+        145deg,
+        rgba(255,255,255,0.9),
+        rgba(160,160,160,0.25)
+    );
+    transform: translateZ(22px);
+    }
+
+    .cube::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    @keyframes cube-float {
+    0%   { transform: translateY(0); }
+    50%  { transform: translateY(-16px); }
+    100% { transform: translateY(0); }
+    }
+
+
+    .container,
+    .card,
+    form {
+    position: relative;
+    z-index: 5;
+    }
+
+    </style>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const togglePassword = document.getElementById('toggle-password');
+            if (togglePassword) {
+                togglePassword.addEventListener('click', function() {
+                    const passwordField = document.getElementById('password');
+                    const passwordIcon = this;
+
+                    if (passwordField.type === 'password') {
+                        passwordField.type = 'text';
+                        passwordIcon.classList.remove('fa-eye');
+                        passwordIcon.classList.add('fa-eye-slash');
+                        passwordIcon.setAttribute('title', 'Hide password');
+                    } else {
+                        passwordField.type = 'password';
+                        passwordIcon.classList.remove('fa-eye-slash');
+                        passwordIcon.classList.add('fa-eye');
+                        passwordIcon.setAttribute('title', 'Show password');
+                    }
+                });
+            }
+        });
+
+        function disableCopyPasteCut(event) {
+            event.preventDefault();
+            
+        }
+        window.onload = function () {
+            var inputFields = document.querySelectorAll('input');
+            
+        
+            inputFields.forEach(function(input) {
+                input.addEventListener('copy', disableCopyPasteCut);
+                input.addEventListener('paste', disableCopyPasteCut);
+                input.addEventListener('cut', disableCopyPasteCut);
+            });
+        };
+
+
+        
+    </script>
+</head>
+<body>
+<!-- SQUARE BACKGROUND -->
+<div class="scene">
+  <div class="cube-field" data-depth="0.35">
+    <script>
+      for (let i = 0; i < 160; i++) {
+        document.write('<div class="cube"></div>');
+      }
+    </script>
+  </div>
+</div>
+            
+    
+    <!-- Header navbar -->
+    {% include 'navbar.html' %}
+
+    
+
+
+    <section >
+        <div class="container mt-5" data-animate="fade-in">
+            
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <!-- BACKGROUND -->
+                    <div class="card p-4 ">
+                        
+                        <h1 >User Sign In</h1>
+
+                        <form id="login-form"  method="post" class="form">
+                            {% csrf_token %}
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <div class="input-container">
+                                    <i class="fa fa-envelope" aria-hidden="true"></i>
+                                    <input style="padding-left:30px;" type="email" id="email" name="email" required placeholder="john.123@example.com" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"  title="Example: john.123@example.com. Must be a valid email format" onkeyup="validateEmail()">
+                                </div>
+                            </div>
+                            <div id="email-status" class="small mb-2"></div>
+                        
+                            <div class="form-group password-container">
+                                <label for="password">Password</label>
+                                <div class="input-container">
+                                    <i class="fa fa-lock" ></i>
+                                    <input style="padding-left:30px;" type="password"  id="password" name="password" required minlength="8" placeholder="Enter your password" pattern="(?=.*\d)(?=.*[!@#$%^&*]).{8,}" title="Minimum length: 8 characters, must include at least one number and one special character. Example: john123!" onkeyup="validatePassword()">
+                                    <i class="fas fa-eye password-icon" id="toggle-password" title="Show password"></i>
+                                </div>
+                            </div>
+                            <div id="password-status" class="small  mb-2"></div>           
+
+                            <div class="form-group">
+                                <button type="submit" class=" button-primary p-2  w-100">Sign In</button>
+                            </div>
+                            <div class="form-group">
+                                <label ><a  class="border-bottom-primary" href="{% url 'request_reset' %}">Forgot your password?</a></label>
+                            </div>
+                            <div class="form-group">
+                                <lable> Don't have an account? <a class="border-bottom-primary" href="{% url 'register' %}">Sign Up</a></label>
+                            </div>
+                            <div class="form-group">
+                                <label>{{ error|safe }}</label>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <script>
+        function validateEmail() {
+            var email = document.getElementById('email').value;
+            var pattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+            var status = document.getElementById('email-status');
+        
+            if (pattern.test(email)) {    
+                status.textContent = 'Email meets the criteria'; 
+                status.classList.remove('text-danger');
+                status.classList.add('text-success');
+            } else {
+                status.textContent = 'Invalid email format, Example: john.123@example.com';
+                status.classList.remove('text-success');
+                status.classList.add('text-danger');
+                
+            }
+            setTimeout(function() {
+                status.textContent = '';
+            }, 10000);
+        }
+
+
+        document.getElementById('email').addEventListener('focus', function() {
+            var email = this.value;
+            var status = document.getElementById('email-status');
+            var pattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+        
+            if (pattern.test(email)) {
+                status.textContent = 'Email meets the criteria','green';
+                status.classList.remove('text-danger');
+                status.classList.add('text-success');
+                
+            } else {
+                status.textContent = 'Enter valid email,' +
+                  'Example: john.123@example.com';
+                  status.classList.remove('text-success');
+                    status.classList.add('text-danger');
+                
+            }
+
+            setTimeout(function() {
+                status.textContent = '';
+            }, 10000);
+        });
+        
+        function validatePassword() {
+            var password = document.getElementById('password').value;
+            var pattern = /^(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+            var status = document.getElementById('password-status');
+        
+            if (pattern.test(password)) {
+                status.textContent = 'Password meets the criteria';
+                 status.classList.remove('text-danger');
+                 status.classList.add('text-success');
+                
+            } else {
+                status.textContent = 'Minimum length: 8 characters.' +
+                    'Must include at least one number and one special character.' +
+                    'Example: john123!';
+                    status.classList.remove('text-success');
+                    status.classList.add('text-danger');
+                
+            }
+            setTimeout(function() {
+                status.textContent = '';
+            }, 10000);
+        }
+
+        document.getElementById('password').addEventListener('focus', function() {
+            var password = this.value;
+            var status = document.getElementById('password-status');
+            var pattern = /^(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+        
+            if (pattern.test(password)) {
+                status.textContent = 'Password meets the criteria';
+                 status.classList.remove('text-danger');
+                 status.classList.add('text-success');
+                
+            } else {
+                status.textContent = 'Enter valid password .'+
+                 'Example: john123!';
+                 status.classList.remove('text-success');
+                 status.classList.add('text-danger');
+               
+            }
+
+            setTimeout(function() {
+                status.textContent = '';
+            }, 10000);
+        });
+        
+       
+        document.addEventListener("mousemove", e => {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+
+        document.querySelectorAll("[data-depth]").forEach(el => {
+            const depth = el.dataset.depth;
+            const x = (e.clientX - cx) * depth / 80;
+            const y = (e.clientY - cy) * depth / 80;
+
+            if (el.classList.contains("cube-field")) {
+            el.style.transform =
+                `rotateX(60deg) rotateZ(45deg) translate(${x}px, ${y}px)`;
+            } else {
+            el.style.transform =
+                `translate(${x}px, ${y}px)`;
+            }
+        });
+        });
+    </script>
+
+</body>
+</html>

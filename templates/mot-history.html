@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOT History Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 25mm 0 10mm 0; /* Top margin of 25mm for each page */
+            padding: 0;
+            background-color: #f9f9f9;
+            font-size: 12px;
+        }
+
+        .container {
+            width: 210mm; /* A4 width */
+            min-height: 297mm; /* A4 height */
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff; /* Remove grey background */
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+            page-break-after: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 20px;
+        }
+
+        h2 {
+            font-size: 16px;
+            text-decoration: underline;
+            color: black; /* Vehicle Details Header Color */
+        }
+
+        .vehicle-details {
+            margin-bottom: 20px;
+        }
+
+        .vehicle-details table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .vehicle-details th, .vehicle-details td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .vehicle-details th {
+            background-color: #000; /* Black for Vehicle Details header */
+            color: white;
+            font-size: 12px;
+        }
+
+        .vehicle-details td {
+            background-color: #f4f4f4;
+        }
+
+        .mot-details {
+            margin-bottom: 20px;
+            text-decoration: underline;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-size: 12px;
+        }
+
+        .mot-history th {
+            background-color: #0056b3; /* Corporate Blue */
+            color: white; /* White text */
+        }
+
+        td {
+            background-color: #f4f4f4;
+        }
+
+        .result-passed {
+            color: green;
+            font-weight: bold;
+        }
+
+        .result-failed {
+            color: red;
+            font-weight: bold;
+        }
+
+        .disclaimer {
+            margin-top: 20px;
+            padding: 10px;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #555;
+            background-color: #f4f4f4;
+        }
+
+        .disclaimer p {
+            margin: 10px 0;
+        }
+
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: white;
+            }
+
+            .container {
+                box-shadow: none;
+                page-break-inside: avoid;
+                width: 100%;
+                height: auto; /* Adjust height to fit content */
+            }
+
+            @page {
+                margin: 25mm 10mm; /* Adjust margin for top space and footer */
+            }
+
+            .footer {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 15mm;
+                text-align: center;
+                font-size: 12px;
+                color: #555;
+            }
+
+            .footer-text {
+                font-weight: bold; /* Make the text bold */
+                margin: 10px 0; /* Optional: add some vertical spacing */
+            }
+        }
+
+        .report-generated {
+            text-align: center;
+            margin-top: 10px; /* Optional: Add some space above */
+            font-size: 14px; /* Optional: Change font size if desired */
+            font-weight: bold; /* Make the report generated text bold */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Vehicle MOT History: <span id="vehicle-number">{{ vehicle_details.registration }}</span></h1>
+        <div class="report-generated">Report Generated: {{ report_time }}</div>
+        
+        <div class="vehicle-details">
+            <h2>Vehicle Details</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Registration</th>
+                        <th>Make</th>
+                        <th>Model</th>
+                        <th>Registration Date</th>
+                        <th>Fuel Type</th>
+                        <th>Colour</th>
+                        <th>Engine Size</th>
+
+                        {% if is_dashboard %}
+                            <th>MOT Expiry</th>
+                            <th>Tax Expiry</th>
+    
+                        {% endif %}
+
+                       
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ vehicle_details.registration }}</td>
+                        <td>{{ vehicle_details.make }}</td>
+                        <td>{{ vehicle_details.model }}</td>
+                        <td>{{ vehicle_details.registrationDate }}</td>
+                        <td>{{ vehicle_details.fuelType }}</td>
+                        <td>{{ vehicle_details.primaryColour }}</td>
+                        <td>{{ vehicle_details.engineSize }}</td>
+                       
+                        {% if is_dashboard %}
+            
+                       
+                            <td>{{ vehicle_details.mot_expiry_date }}</td>
+                            <td>{{ vehicle_details.tax_due_date }}</td>
+                        {% endif %}
+
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-bottom: 20px;"></div>
+
+        <div class="mot-details">
+            <h2>MOT History Details</h2>
+        </div>
+
+        {% for mot in mot_records %}
+        <div class="mot-block">
+            <table class="mot-history">
+                <thead>
+                    <tr>
+                        <th>Result</th>
+                        <th>MOT Test Date and Time</th>
+                        <th>MOT Expiry Date</th>
+                        <th>Odometer Reading (miles)</th>
+                        <th>MOT Test Number</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="{% if mot.testResult == 'PASSED' %}result-passed{% else %}result-failed{% endif %}">
+                            {{ mot.testResult }}
+                        </td>
+
+                        <td>{{ mot.completedDate }}</td>
+                        <td>{{ mot.expiryDate }}</td>
+                        <td>{{ mot.odometerReading }}</td>
+                        <td>{{ mot.motTestNumber }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table>
+                <thead>
+                    <tr class="notes-header">
+                        <th>Test Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="notes-content">
+                        <td>
+                            {% if mot.testNotes %}
+                                {{ mot.testNotes|join:", " }}
+                            {% else %}
+                                nil
+                            {% endif %}
+                        </td>
+
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% endfor %}
+
+        <div class="disclaimer">
+            <p>Disclaimer: This report is generated using DVLA data based on the user-supplied information and is deemed valid as of the date and time.</p>
+            <p>This report is published free of charge to the public by RENIX (UK) Limited. We do not take any responsibility for any discrepancies or litigation raised through this report.</p>
+            <p>Renix (UK) Limited is not liable for any damages or losses incurred through the use of this report. All data is provided as-is, and no warranties are implied. Any reliance on the information contained herein is at the user's own risk.</p>
+            <p>RENIX(UK) Limited | Website: https://renix.co.uk | Email: info@renix.co.uk</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        
+    </div>
+</body>
+</html>

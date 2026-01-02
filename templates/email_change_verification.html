@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> 
+    <title>AutoConnect — Verify Your New Email</title>
+
+    <style>
+        body { font-family: "Segoe UI", Tahoma, Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 30px 10px; }
+        .email-wrapper { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .email-header { background: linear-gradient(135deg, #3a5f7d, #263f54); padding: 22px; text-align: center; }
+        .email-header h1 { color: #fff; margin: 0; font-size: 26px; font-weight: 700; }
+        .content { padding: 25px; }
+        .button {
+            background: linear-gradient(135deg, #00bfff, #3a5f7d);
+            color:#fff !important;
+            padding: 14px 20px; border-radius: 8px; color:#fff; text-decoration:none;
+            font-size:18px; font-weight:bold; display:inline-block;
+            margin-top: 20px;
+        }
+        .email-footer { background-color: #0e2a38; color: #fff; text-align: center; font-size: 13px; padding: 15px; margin-top: 20px;}
+    </style>
+</head>
+
+<body>
+    <div class="email-wrapper">
+
+        <div class="email-header">
+            <h1>AutoConnect</h1>
+            <p style="margin-top:6px; color: #fff;">Connect Your Vehicle • Track • Manage • Automate</p>
+        </div>
+
+        <div class="content">
+            
+            <h2 style="text-align:center; color:#1e90ff;">Verify Your New Email</h2>
+
+            <p style="font-size:16px; color:#444; ">
+                Hello <strong>{{ username }}</strong>,<br><br>
+                You requested to change your email address for your AutoConnect account. Please verify your new email to complete the change.
+            </p>
+
+            <p style="font-size:15px; color:#555;">
+                Click the button below to verify your new email address:
+            </p>
+
+            <div style="text-align:center;">
+                <a href="{{ verify_link }}" class="button"  style="color: #fff;" target="_blank">Verify New Email</a>
+            </div>
+
+        </div>
+
+        <div class="email-footer">
+            <span>© AutoConnect — Vehicle Connectivity & Management</span>
+            <p>
+                Call: <a href="tel:+447854052482" style="color: #fff;">07854052482</a><br>
+                Email: <a href="mailto:support@autoconnect.com" style="color: #fff;">support@autoconnect.com</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

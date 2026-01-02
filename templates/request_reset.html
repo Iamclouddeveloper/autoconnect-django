@@ -1,0 +1,112 @@
+{% load static%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Password Reset</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}"> <!-- Link to your CSS file -->
+</head>
+<body class="bg-primary">
+     <!-- Header navbar -->
+     {% include 'navbar.html' %}
+
+     <!-- Flash message for success or errors -->
+     {% if messages %}
+        {% for message in messages %}
+            <div class="flash-message {{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <section >
+        <div class="container mt-5">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card p-4">
+                        <h1 class"text-center">Request Password Reset</h1>
+                        
+
+                        
+                        <form method="POST" class="form">
+                            {% csrf_token%}
+                            <div class="form-group">
+                                <label for="email">Email Address</label>
+                                <div class="input-container">
+                                    <i class="fa fa-envelope" aria-hidden="true"></i>
+                                    <input style="padding-left:30px;" type="email" id="email" name="email" required placeholder="john.123@example.com" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"  title="Example: john.123@example.com. Must be a valid email format" onkeyup="validateEmail()">
+                                </div>
+                            </div>
+                            <div id="email-status" class="small text-danger mb-2"></div>
+
+                            <div class="form-group">
+                                <button type="submit" class="button-primary p-2 w-100">Request Password Reset</button>
+                            </div>
+
+                            <div class="form-group ">
+                                <p >Remember your password? <a class="border-bottom-primary" href="{% url 'login' %}">sign in</a></p>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <script>
+
+
+        function disableCopyPasteCut(event) {
+            event.preventDefault();
+            
+        }
+        window.onload = function () {
+            
+            var inputFields = document.querySelectorAll('input');
+            
+            
+            inputFields.forEach(function(input) {
+                input.addEventListener('copy', disableCopyPasteCut);
+                input.addEventListener('paste', disableCopyPasteCut);
+                input.addEventListener('cut', disableCopyPasteCut);
+            });
+        };
+
+        // Hide flash message after 10 sec
+        setTimeout(function () {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(function (message) {
+                message.style.display = 'none';
+            });
+        }, 10000);
+
+
+        function showStatus(element, message, color) {
+            element.textContent = message;
+            element.style.color = color;
+            setTimeout(() => element.textContent = '', 10000);
+        }
+        function validateEmail() {
+            const email = document.getElementById('email').value;
+            const status = document.getElementById('email-status');
+            const pattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+            if (pattern.test(email)) {
+                showStatus(status, 'Email meets the criteria');
+            } else {
+                showStatus(status, 'Invalid email format. Example: john.123@example.com');
+            }   
+        }
+    
+        document.getElementById('email').addEventListener('focus', () => showStatus(document.getElementById('email-status'), "Enter valid email. Example: john.123@example.com."));
+        document.getElementById('email').addEventListener('keyup', validateEmail);
+    </script>
+
+
+
+
+</body>
+</html>

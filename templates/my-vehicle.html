@@ -1,0 +1,821 @@
+{% load static%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Vehicle</title>
+    <link rel="stylesheet" href="{% static 'bootstrap/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+
+        
+        
+        /* TABLE */
+        .vehicle-table  {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .vehicle-table th, .vehicle-table td {
+            padding: 12px !important;
+            text-align: left !important;
+        }
+        .vehicle-table th {
+            background: var(--primary);
+            color: #fff;
+        }
+        .vehicle-table tr:nth-child(even) { background: #eef2f6 !important; }
+        .vehicle-table tr:hover { background: #e6f0f7 !important; }
+
+         .mot-table {
+            width: 100%; /* Fixed width for table */
+            border-collapse: collapse;
+            margin-top: 20px;
+            table-layout: fixed;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+
+        .mot-table th, .mot-table td {
+            border: 1px solid #ddd ;
+            padding: 8px;
+        }
+
+        .mot-table td:first-child {
+            font-weight: bold;
+            background-color: #f2f2f2;
+            width: 30%;
+        }
+
+        .mot-table td:last-child {
+            width: 70%;
+        }
+
+
+                
+        .dataTables_wrapper .dataTables_filter input,
+        .dataTables_wrapper .dataTables_length select {
+            border-radius: 8px;
+            border: 1px solid var(--border-light );
+            padding: 4px 8px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            border-radius: 8px !important;
+            padding: 4px 10px;
+            margin: 2px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: linear-gradient(
+            135deg,
+            var(--primary) 0%,
+            var(--primary-dark) 100%
+        );
+            color: #fff !important;
+            border: none !important;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #e0f2fe !important;
+            color: #0f172a !important;
+        }
+
+        /* ===============================
+        SORT ICON SPACING
+        ================================ */
+        .dataTables_wrapper .sorting::before,
+        .dataTables_wrapper .sorting::after {
+            display: block;
+            margin: 4px 0;
+        }
+        /* Hide sort icons for disabled columns */
+        #usersTable th.sorting_disabled::before,
+        #usersTable th.sorting_disabled::after {
+            display: none !important;
+        }
+
+
+        
+
+
+        
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1; 
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; 
+            background-color: rgb(0,0,0); 
+            background-color: rgba(0,0,0,0.4); 
+        }
+
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto; 
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; 
+            max-width: 400px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+
+        .close {
+            color: #aaa;
+            float: right;
+            text-align: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #confirmBtn {
+            background-color: #4CAF50; /* Green */
+            color: white;
+        }
+
+        #cancelBtn {
+            background-color: #f44336; /* Red */
+            color: white;
+        }
+
+        #fa-sort {
+            color: gray;
+            opacity: 0;
+            transition: opacity 0.3s;
+            cursor: pointer;
+        }
+        #fa-sort:hover  {
+            opacity: 1;
+        }
+
+        
+
+
+        .mot-block {
+            margin-bottom: 20px; /* Spacing between MOT result tables */
+        }
+        
+        .collapsible {
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: underline;
+            background: var(--primary); /* Corporate color */
+            color: #fff;
+            border: none;
+            padding: 10px;
+            width: calc(100% - 20px); /* Adjust width for link alignment */
+            text-align: left;
+            border-radius: 5px; /* Curved border */
+            transition: background-color 0.3s;
+            position: relative; /* For positioning the link */
+        }
+        
+        .collapsible:hover {
+            background-color:var(--accent);
+        }
+        
+        .content {
+            display: none;
+            overflow: hidden;
+            
+            padding: 10px;
+        }
+        
+        .notes-header {
+            background-color: turquoise;
+            color: #fff;
+            text-align: left;
+            font-weight: bold;
+            padding: 10px;
+        }
+        
+        .notes-content {
+            background-color: #fff;
+            padding: 10px;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        
+        .pass {
+            color: green;
+            font-weight: bold;
+        }
+        
+        .fail {
+            color: red;
+            font-weight: bold;
+        }
+        
+        .show-all-checkbox {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .show-all-checkbox label {
+            display: none; /* Hidden by default */
+        }
+        
+        
+        .search-link {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            text-decoration: none;
+            color: #fff;
+            font-size: 14px;
+            border: none;
+            background: none;
+        }
+        
+        .search-link:hover {
+            text-decoration: underline;
+        }
+        
+        @media screen and (max-width: 768px) {
+            
+            .collapsible {
+                font-size: 12px; 
+                padding: 8px; 
+                width: calc(100% - 16px); 
+            }
+            
+        }
+        
+        
+
+    </style>
+</head>
+<body>
+    <!-- Header navbar -->
+    {% include 'side_navbar.html' %}
+    
+
+
+    <div class="container card mt-5 py-4 rounded-3">
+
+    <h1 style="text-align: center;">My Vehicle</h1>
+
+    <div class="input-container mb-3">
+            <i class="fa fa-search" aria-hidden="true"></i>
+            <input type="text" id="vehicleSearch" class="form-control  px-5 w-100" placeholder="Search...">
+       </div>
+    <div class="table-responsive">
+        
+        <div> 
+            <a href="{% url 'add_vehicle' %}"class=" btn button-primary text-white mb-2">Add Vehicle</a> 
+        </div>   
+
+        <table id="vehicleTable" class="vehicle-table">
+            <thead>
+                <tr>
+                    
+                    <th >Created</th> 
+                    <th>VRN</th>
+                    <th>Make</th>
+                    <th>Model</th>
+                    <th>MOT Status</th>
+                    <th>MOT Expiry</th>
+                    <th>Tax Status</th>
+                    <th>Tax Due</th>
+                    <th>Report</th>
+                    <th>Action</th>
+                    
+
+                </tr>
+            </thead>
+
+            <tbody>
+            
+                {% for vehicle in vehicles %}
+                    <tr>
+                        <td data-order="{{ vehicle.created_at|date:'Y-m-d H:i:s' }}">
+                        </td>
+
+                        <td>{{ vehicle.vrn }}</td>
+                        <td>{{ vehicle.make }}</td>
+                        <td>{{ vehicle.model }}</td>
+                        <!--  MOT -->
+                        <!-- <td>
+                            {% if vehicle.mot_status %}
+                                {% if vehicle.mot_status|lower == 'valid' %}
+                                    <span class="status-pill status-pass">Pass</span>
+                                {% else %}
+                                    <span class="status-pill status-fail">Fail</span>
+                                {% endif %}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td> -->
+
+                        <td>
+                            {% if vehicle.mot_status %}
+                                {% if vehicle.mot_status|lower == 'valid' %}
+                                    <span class="status-pill status-pass">Pass</span>
+                                {% elif vehicle.mot_status|lower == 'no mot required' %}
+                                    <span class="status-pill status-na">No MOT required</span>
+                                {% else %}
+                                    <span class="status-pill status-fail">Fail</span>
+                                {% endif %}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+
+
+                        <td
+                            {% if vehicle.mot_expiry_date %}
+                                data-order="{{ vehicle.mot_expiry_date|date:'Y-m-d' }}"
+                            {% else %}
+                                data-order="9999-12-31"
+                            {% endif %}
+                            >
+                            {{ vehicle.mot_expiry_date|date:"d M Y"|default:"N/A" }}
+                        </td>
+
+                        <!-- TAX -->
+                        <td>
+                            {% if vehicle.tax_status %}
+                                {% if vehicle.tax_status|lower == 'taxed' %}
+                                    <span class="status-pill status-pass">Taxed</span>
+                                {% else %}
+                                    <span class="status-pill status-fail">Untaxed</span>
+                                {% endif %}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+
+
+                        <td
+                            {% if vehicle.tax_due_date %}
+                                data-order="{{ vehicle.tax_due_date|date:'Y-m-d' }}"
+                            {% else %}
+                                data-order="9999-12-31"
+                            {% endif %}
+                            >
+                            {{ vehicle.tax_due_date|date:"d M Y"|default:"N/A" }}
+                        </td>
+
+                        <td>
+                            <a href="javascript:void(0);" class="btn btn-primary btn-sm"
+                            onclick="generateMotReport('{{ vehicle.vrn }}')">
+                            MOT
+                            </a>
+                        </td>
+                        <td>
+                            
+                            <a href="javascript:void(0);"
+                            onclick="confirmDelete('{% url 'delete_vehicle' vehicle.id %}')"
+                            class="btn btn-danger btn-sm">
+                            Delete
+                            </a>
+                            
+
+                        </td>
+                    </tr>
+                {% endfor %}
+            
+            
+            </tbody>
+        </table>
+    </div>
+
+    
+        <!-- Vehicle Details Section -->
+        <div id="vehicle-details" class="my-2">
+            <!-- Vehicle details will be inserted here -->
+        </div>
+
+        <!-- Show All MOT Test Results -->
+        <div class="show-all-checkbox">
+            <label>
+                <input type="checkbox" id="show-all" onchange="toggleAllMOTResults()">
+                Show All MOT Test Results
+            </label>
+        </div>
+
+        <!-- MOT Report Section -->
+        <div id="mot-report">
+            <!-- MOT details will be inserted here -->
+        </div>
+
+        <div class="button-container" id="pdf-container">
+            <button id="pdf-button"  class="button-primary d-none" onclick="generatePDF()">Export to PDF</button>
+        </div>
+    </div>
+        <div id="confirmModal" class="modal"> 
+            <div class="modal-content"> 
+                <span class="close">&times;</span>
+                 <p>Are you sure you want to delete this vehicle?</p> 
+                 <button class="modal-button" id="confirmBtn">Yes, Delete</button>
+                 <button class="modal-button" id="cancelBtn">Cancel</button> 
+            </div> 
+        </div>
+    </div>
+
+
+
+
+</div>
+            
+       
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+
+
+     <script>
+
+$(document).ready(function () {
+
+    const table = $('#vehicleTable').DataTable({
+        pageLength: 5,
+        lengthChange: false,
+        ordering: true,
+        order: [[0, 'desc']],
+        searching: true,
+        dom: 'rt<"bottom"ip>',
+        columnDefs: [
+            { targets: 0, visible: false },
+            { orderable: false, targets: [-1, -2] }
+        ],
+        autoWidth: false,
+        language: {
+            paginate: {
+                previous: "<",
+                next: ">"
+            }
+        }
+    });
+
+    $('#vehicleSearch').on('keyup', function () {
+        table.search(this.value).draw();
+    });
+
+});
+
+
+
+
+
+        
+    
+    
+        function confirmDelete(url) {
+            var modal = document.getElementById("confirmModal");
+            var confirmBtn = document.getElementById("confirmBtn");
+            var cancelBtn = document.getElementById("cancelBtn");
+            var span = document.getElementsByClassName("close")[0];
+        
+            modal.style.display = "block";
+        
+            confirmBtn.onclick = function() {
+                window.location.href = url;
+            }
+        
+            cancelBtn.onclick = function() {
+                modal.style.display = "none";
+            }
+        
+            span.onclick = function() {
+                modal.style.display = "none";
+            }
+        
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+        }
+     
+        function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+        let currentVrn = ''; // Global variable to store the selected vehicle's VRN
+        let vehicleDetails = null; // Global variable to store the vehicle details
+    
+        function generateMotReport(vrn) {
+            currentVrn = vrn; // Store the selected vehicle's VRN
+            
+            // Send an AJAX POST request to fetch the MOT details for the given VRN
+            fetch("{% url 'search_mot' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({ vrn: vrn })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error); // Handle error if no data
+                } else {
+                    // If MOT data is available, show it directly on the page
+                    vehicleDetails = data.vehicleDetails; // Store vehicle details globally
+                    displayVehicleDetails(data.vehicleDetails);
+                    displayMOTDetails(data.motRecords);
+                    document.getElementById('vehicle-details')
+                    .scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+                    // Dynamically show the PDF button
+                     const btn = document.getElementById('pdf-button'); 
+                        btn.classList.remove('d-none'); 
+                        btn.style.display = 'inline-block';
+                    document.querySelector('.show-all-checkbox label').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching MOT details:', error);
+                document.getElementById('mot-report').innerHTML =  `
+                    <div class="status-box">
+                    MOT test reports and history are only available for vehicles that are more than 3 years old from the date of their first registration
+                    </div>
+                `;
+                document.querySelector('.show-all-checkbox label').style.display = 'none';
+                document.getElementById('pdf-button').style.display = 'none';
+            });
+        }
+    
+        function displayVehicleDetails(details) {
+            const container = document.getElementById('vehicle-details');
+            container.innerHTML = '';
+    
+            let detailsHtml = '<h4 class="text-center my-3">Vehicle Details</h4><table class="mot-table"><tbody>';
+    
+            detailsHtml += `<tr>
+                <td>Registration</td>
+                <td>${details.registration || 'N/A'}</td>
+            </tr>
+            <tr>
+                <td>Make</td>
+                <td>${details.make || 'N/A'}</td>
+            </tr>
+            <tr>
+                <td>Model</td>
+                <td>${details.model || 'N/A'}</td>
+            </tr>
+            <tr>
+                <td>Fuel Type</td>
+                <td>${details.fuelType || 'N/A'}</td>
+            </tr>
+            <tr>
+                <td>Colour</td>
+                <td>${details.primaryColour || 'N/A'}</td>
+            </tr>
+            <tr>
+                <td>Engine Size</td>
+                <td>${details.engineSize || 'N/A'}</td>
+            </tr>
+            <tr>
+                <td>Registration Date</td>
+                <td>${details.registrationDate || 'N/A'}</td>
+            </tr>
+             <tr>
+                <td>MOT Expiry</td>
+                <td>${details.mot_expiry_date || 'N/A'}</td>
+            </tr>
+             <tr>
+                <td>Tax Due</td>
+                <td>${details.tax_due_date || 'N/A'}</td>
+            </tr>`;
+    
+            detailsHtml += '</tbody></table>';
+            container.innerHTML = detailsHtml;
+        }
+    
+        function displayMOTDetails(data) {
+            const container = document.getElementById('mot-report');
+            container.innerHTML = '';
+    
+            let reportHtml = '';
+    
+            data.forEach((record, index) => {
+                const isCollapsed = !document.getElementById('show-all').checked && index !== 0 ? 'display: none;' : '';
+                const testResultClass = record.testResult.toUpperCase() === 'PASSED' ? 'pass' : 'fail';
+    
+                reportHtml += `<div class="mot-block">
+                    <button class="collapsible"> ${record.motTestNumber || 'N/A'}
+                        <a class="search-link" href="#"><i class="bi bi-chevron-up"></i></a>
+                    </button>
+                    <div class="content" style="${isCollapsed}">
+                        <table class="mot-table">
+                            <tbody>
+                                <tr>
+                                    <td>Test Result</td>
+                                    <td class="${testResultClass}">${record.testResult || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td>MOT Test Date</td>
+                                    <td>${record.completedDate || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td>MOT Expiry Date</td>
+                                    <td>${record.expiryDate || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td>Odometer Reading</td>
+                                    <td>${record.odometerReading || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td>MOT Test Number</td>
+                                    <td>${record.motTestNumber || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td>Test Notes</td>
+                                    <td>${Array.isArray(record.testNotes) ? record.testNotes.join(', ') : 'N/A'}</td>
+                                </tr>
+                            </tbody>
+                            <button class="close-mot" style="display: none;">&times;</button> <!-- Close button -->
+                        </table>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = reportHtml;
+    
+            // Initialize collapsible buttons
+            const collapsibles = document.querySelectorAll(".collapsible");
+            
+    
+            collapsibles.forEach(button => {
+                button.addEventListener("click", function () {
+                    this.classList.toggle("active");
+    
+                    const content = this.nextElementSibling;
+                    if (content.style.display === "block") {
+                        content.style.display = "none";
+                    } else {
+                        content.style.display = "block";
+                    }
+                });
+            });
+        }
+    
+        // Toggle collapsible content
+        document.addEventListener('DOMContentLoaded', () => {
+            const coll = document.getElementsByClassName("collapsible");
+            for (let i = 0; i < coll.length; i++) {
+                coll[i].addEventListener("click", function () {
+                    this.classList.toggle("active");
+                    const content = this.nextElementSibling;
+                    if (content.style.display === "block") {
+                        content.style.display = "none";
+                    } else {
+                        content.style.display = "block";
+                    }
+                });
+            }
+        });
+        
+    
+
+        function toggleAllMOTResults() {
+            const isChecked = document.getElementById('show-all').checked;
+            const allMotBlocks = document.querySelectorAll('.mot-block');
+            
+            allMotBlocks.forEach(block => {
+                const content = block.querySelector('.content');
+                if (content) {
+                    content.style.display = isChecked ? 'block' : 'none';
+                }
+            });
+        
+            
+        
+            // Automatically scroll to the bottom when "Show All" is checked
+            if (isChecked) {
+                window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        }
+        document.addEventListener('keydown', function() {
+            document.getElementById('vehicle-details').innerHTML = '';
+            document.getElementById('mot-report').innerHTML = '';
+            document.querySelector('.show-all-checkbox label').style.display = 'none';
+            document.getElementById('pdf-button').style.display = 'none';
+        });
+        
+        document.addEventListener('click', function (e) {
+            if (e.target.classList.contains('search-link')) {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+
+        // Generate PDF using the selected VRN and vehicle details
+        async function generatePDF() {
+            try {
+                if (!currentVrn) {
+                    alert('No vehicle selected for PDF generation.');
+                    return;
+                }
+    
+                const motRecords = Array.from(document.querySelectorAll('#mot-report .mot-block')).map(block => {
+                    const rows = block.querySelectorAll('table tbody tr');
+                    return {
+                        completedDate: rows[1].querySelector('td:last-child').innerText,
+                        expiryDate: rows[2].querySelector('td:last-child').innerText,
+                        odometerReading: rows[3].querySelector('td:last-child').innerText,
+                        testResult: rows[0].querySelector('td:last-child').innerText,
+                        motTestNumber: rows[4].querySelector('td:last-child').innerText,
+                        testNotes: rows[5].querySelector('td:last-child').innerText.split(', ')
+                    };
+                });
+    
+                // Ensure that vehicle details and MOT records are available
+                if (!vehicleDetails || motRecords.length === 0) {
+                    alert('No data to export.');
+                    return;
+                }
+
+                const payload = {
+                    vrn: currentVrn,
+                    vehicle_details: vehicleDetails,
+                    motRecords: motRecords,
+                    isDashboard: true 
+                };
+    
+                // Make the API call to generate the PDF
+                const response = await fetch("{% url 'generate_pdf' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+    
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `MOT_History_${currentVrn}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                } else {
+                    const errorData = await response.json();
+                    alert(`Error generating PDF: ${errorData.error}`);
+                }
+            } catch (error) {
+                alert('Network error. Please check your connection.');
+            }
+        }
+    </script>
+    
+    
+</body>
+
+</html>
