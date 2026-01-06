@@ -26,14 +26,83 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from .models import Vehicle
 from django.core.mail import EmailMultiAlternatives
+import random
 
 
  
 
 User = get_user_model()
 
+
 def index(request):
-    return render(request, 'index.html')
+    # ---------- CAPTCHA GENERATION ----------
+    if "captcha" not in request.session:
+        a = random.randint(1, 9)
+        b = random.randint(1, 9)
+        request.session["captcha"] = a + b
+        request.session["captcha_q"] = f"{a} + {b}"
+
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        email = request.POST.get("email", "").strip()
+        company = request.POST.get("company", "").strip()
+        message_text = request.POST.get("message", "").strip()
+        captcha_answer = request.POST.get("captcha_answer")
+
+        
+        if not name or not email or not message_text:
+            messages.error(request, "All required fields must be filled.")
+            return redirect("index")
+
+        if not captcha_answer or int(captcha_answer) != request.session.get("captcha"):
+            messages.error(request, "Incorrect security answer.")
+            return redirect("index")
+
+        # CAPTCHA passed → remove it
+        request.session.pop("captcha", None)
+        request.session.pop("captcha_q", None)
+
+        # ---------- EMAIL TO ADMIN ----------
+        admin_html = render_to_string('contact_email.html', {
+            'name': name,
+            'email': email,
+            'company': company,
+            'message': message_text
+        })
+
+        admin_email = EmailMultiAlternatives(
+            subject='New Contact Message – AutoNgx',
+            body='New contact enquiry received.',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[settings.DEFAULT_FROM_EMAIL], 
+            cc=['mohamedriyas.py@gmail.com']  
+        )
+        admin_email.attach_alternative(admin_html, "text/html")
+        admin_email.send()
+        
+
+        # ---------- AUTO REPLY TO USER ----------
+        auto_html = render_to_string('auto_reply_email.html', {
+            'name': name
+        })
+
+        auto_email = EmailMultiAlternatives(
+            subject='Thank you for contacting AutoNgx',
+            body='Thank you for contacting AutoNgx.',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email]
+        )
+        auto_email.attach_alternative(auto_html, "text/html")
+        auto_email.send()
+
+        messages.success(request, "Thank you! Your message has been sent.")
+        return redirect("index")
+
+    # GET request
+    return render(request, "index.html", {
+        "captcha_question": request.session.get("captcha_q")
+    })
+
 
 # ---------------- REGISTER ----------------
 def register(request):
@@ -64,7 +133,7 @@ def register(request):
                     'verify_link': verify_link
                 })
 
-                subject = 'Verify your AutoConnect email'
+                subject = 'Verify your AutoNgx email'
                 from_email = settings.DEFAULT_FROM_EMAIL
                 to_email = [email]
 
@@ -98,7 +167,7 @@ def register(request):
             'verify_link': verify_link
         })
 
-        subject = 'Verify your AutoConnect email'
+        subject = 'Verify your AutoNgx email'
         from_email = settings.DEFAULT_FROM_EMAIL
         to_email = [email]
 
@@ -975,19 +1044,6 @@ def add_vehicle(request):
             
             today = date.today()
             #  New vehicle logic 
-            # if registration_date:
-            #     first_mot_due = calculate_first_mot_due(registration_date)
-
-            #     if today < first_mot_due:
-            #         mot_status = "Valid"
-            #         mot_expiry = first_mot_due
-            #     else:
-            #         mot_status = dvla_data.get("motStatus")
-            #         mot_expiry = parse_date(dvla_data.get("motExpiryDate"))
-            # else:
-            #     mot_status = dvla_data.get("motStatus")
-            #     mot_expiry = parse_date(dvla_data.get("motExpiryDate"))
-           
             if registration_date:
                 first_mot_due = calculate_first_mot_due(registration_date)
 
@@ -1000,6 +1056,7 @@ def add_vehicle(request):
             else:
                 mot_status = dvla_data.get("motStatus") or "Not valid"
                 mot_expiry = parse_date(dvla_data.get("motExpiryDate"))
+           
 
             tax_status = dvla_data.get("taxStatus")
             tax_due = parse_date(dvla_data.get("taxDueDate"))

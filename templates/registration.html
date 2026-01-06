@@ -5,9 +5,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoConnect - Signup</title>
+    <title>AutoNgx - Signup</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/style.css' %}"> <!-- Link to your CSS file -->
+    <style>
+        /* bottom border */
+        .input-container input {
+            background-color: #ffffff;          
+            border: none;                        
+            border-bottom: 2px solid #ced4da;    
+            border-radius: 0;
+            box-shadow: none;
+            outline: none;
+        }
+
+        .input-container::after{
+            content:'';
+            position:absolute;
+            left:0;
+            bottom:0;
+            height:2px;
+            width:0;
+            background:#0d6efd;      
+            transition: width .35s ease-in-out;
+        }
+        .form-control{
+            background: transparent;
+        }
+
+        .form-control.is-valid,
+        .form-control.is-invalid,
+        .form-control:focus {
+            box-shadow: none !important;
+        
+        }
+    </style>
     <script>
        
 
@@ -69,10 +101,7 @@
                 input.addEventListener('paste', disableCopyPasteCut);
                 input.addEventListener('cut', disableCopyPasteCut);
             });
-        };
-
-        
-        
+        };        
     </script>
 </head>
 
@@ -85,16 +114,16 @@
         <div class="container mt-5" data-animate="fade-in">
             <div class="row justify-content-center">
                 <div class="col-md-6">
-                    <div class="card p-4 ">
-                        <h1 >User Sign Up</h1>
+                    <div class="card p-4 " id="card">
+                        <h1 >Sign Up</h1>
 
-                        <form id="registration-form"  method="post">
+                        <form id="registration-form" class="" method="post">
                             {% csrf_token %}
                             <div class="form-group">
                                 <label for="username">Username</label>
                                 <div class="input-container">
                                     <i class="fa fa-user" aria-hidden="true"></i>
-                                    <input style="padding-left:30px;" type="text" id="username" name="username" required minlength="3" maxlength="15" placeholder="john123" pattern="^[a-zA-Z0-9]{3,15}$" title="username must be alphanumeric,3-15 characters, no special characters or spaces. Example: john123" onkeyup="validateUsername()">
+                                    <input style="padding-left:30px;" class="form-control" type="text" id="username" name="username" required minlength="3" maxlength="15" placeholder="john123" pattern="^[a-zA-Z0-9]{3,15}$" title="username must be alphanumeric,3-15 characters, no special characters or spaces. Example: john123" onkeyup="validateUsername()">
                                 </div>
                             </div>
                             <div id="username-status" class="small mb-2 "></div>
@@ -104,7 +133,7 @@
                                 <label for="email">Email Address</label>
                                 <div class="input-container">
                                     <i class="fa fa-envelope" aria-hidden="true"></i>
-                                    <input style="padding-left:30px;" type="email" id="email" name="email" required placeholder="john.123@example.com" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"  title="Example: john.123@example.com. Must be a valid email format" onkeyup="validateEmail()">
+                                    <input style="padding-left:30px;" class="form-control" type="email" id="email" name="email" required placeholder="john.123@example.com" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"  title="Example: john.123@example.com. Must be a valid email format" onkeyup="validateEmail()">
                                 </div>
                             </div>
                             <div id="email-status" class="small mb-2 "></div>
@@ -113,7 +142,7 @@
                                 <label for="password">Password</label>
                                 <div class="input-container">
                                     <i class="fa fa-lock" aria-hidden="true"></i>
-                                    <input  style="padding-left:30px;" type="password" id="password" name="password" required minlength="8" placeholder="Enter your password" pattern="(?=.*\d)(?=.*[!@#$%^&*]).{8,}" title="Minimum length: 8 characters, must include at least one number and one special character. Example: john123!"  onkeyup="validatePassword()">
+                                    <input  style="padding-left:30px;" class="form-control" type="password" id="password" name="password" required minlength="8" placeholder="Enter your password" pattern="(?=.*\d)(?=.*[!@#$%^&*]).{8,}" title="Minimum length: 8 characters, must include at least one number and one special character. Example: john123!"  onkeyup="validatePassword()">
                                     <i class="fas fa-eye password-icon " id="toggle-password" data-target="password" title="Show password"></i>
                                 </div>
                             </div>
@@ -123,7 +152,7 @@
                                 <label for="confirm-password">Confirm Password</label>
                                 <div class="input-container">
                                     <i class="fa fa-lock" aria-hidden="true"></i>
-                                    <input style="padding-left:30px;" type="password" id="confirm-password" name="confirm_password" required minlength="8" placeholder="Confirm your password" pattern="(?=.*\d)(?=.*[!@#$%^&*])(?!.*\s).{8,}" title="Must match the password entered above. Example: john123!">
+                                    <input style="padding-left:30px;" class="form-control" type="password" id="confirm-password" name="confirm_password" required minlength="8" placeholder="Confirm your password" pattern="(?=.*\d)(?=.*[!@#$%^&*])(?!.*\s).{8,}" title="Must match the password entered above. Example: john123!">
                                     <i class="fas fa-eye password-icon" id="TogglePassword" data-target="confirm-password" title="Show password"></i>
                                 </div>
                             </div>
@@ -147,108 +176,105 @@
 
     
     <script>
-        function showStatus(element, message, type = '') {
-        element.textContent = message;
-        element.classList.remove('text-success', 'text-danger');
-        if (type === 'success') element.classList.add('text-success');
-        if (type === 'error') element.classList.add('text-danger');
+        function showStatus(element, input, message, type = '') {
+            element.textContent = message;
+
+            input.classList.remove('is-valid', 'is-invalid');
+            element.classList.remove('text-success', 'text-danger');
+
+            if (type === 'success') {
+                input.classList.add('is-valid');
+                element.classList.add('text-success');
+            }
+
+            if (type === 'error') {
+                input.classList.add('is-invalid');
+                element.classList.add('text-danger');
+            }
         }
 
         function validateUsername() {
-        const username = document.getElementById('username').value;
-        const status = document.getElementById('username-status');
-        const pattern = /^[a-zA-Z0-9]{3,15}$/;
+            const input = document.getElementById('username');
+            const status = document.getElementById('username-status');
+            const pattern = /^[a-zA-Z0-9]{3,15}$/;
 
-        if (!username) {
-            showStatus(
-            status,
-            'Username must be alphanumeric, 3-15 characters, no special characters or spaces.',
-            'error'
-            );
-            return;
+            if (!input.value) {
+                showStatus(status, input,
+                    'Username is required',
+                    'error'
+                );
+                return;
+            }
+
+            if (pattern.test(input.value)) {
+                showStatus(status, input, 'Username looks good', 'success');
+            } else {
+                showStatus(status, input,
+                    'Username must be alphanumeric, 3-15 characters, no special characters or spaces',
+                    'error'
+                );
+            }
+            setTimeout(() => status.textContent = '', 10000);
         }
 
-        if (pattern.test(username)) {
-            showStatus(status, 'Username meets the criteria', 'success');
-        } else {
-            showStatus(
-            status,
-            'Username must be alphanumeric, 3-15 characters, no special characters or spaces.',
-            'error'
-            );
-        }
-        }
 
         function validateEmail() {
-        const email = document.getElementById('email').value;
-        const status = document.getElementById('email-status');
-        const pattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+            const input = document.getElementById('email');
+            const status = document.getElementById('email-status');
+            const pattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
 
-        if (!email) {
-            showStatus(
-            status,
-            'Enter valid email. Example: john.123@example.com.',
-            'error'
-            );
-            return;
+            if (!input.value) {
+                showStatus(status, input, 'Email is required', 'error');
+                return;
+            }
+
+            if (pattern.test(input.value)) {
+                showStatus(status, input, 'Email meets the criteria', 'success');
+            } else {
+                showStatus(status, input, 'Enter valid email. Example: john.123@example.com.', 'error');
+            }
+            setTimeout(() => status.textContent = '', 10000);
         }
 
-        if (pattern.test(email)) {
-            showStatus(status, 'Email meets the criteria', 'success');
-        } else {
-            showStatus(
-            status,
-            'Invalid email format. Example: john.123@example.com',
-            'error'
-            );
-        }
-        }
+        
 
         function validatePassword() {
-        const password = document.getElementById('password').value;
-        const status = document.getElementById('password-status');
-        const pattern = /^(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+            const input = document.getElementById('password');
+            const status = document.getElementById('password-status');
+            const pattern = /^(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
 
-        if (!password) {
-            showStatus(
-            status,
-            'Minimum length: 8 characters. Must include at least one number and one special character.',
-            'error'
-            );
-            return;
+            if (pattern.test(input.value)) {
+                showStatus(status, input, 'password meets the criteria', 'success');
+            } else {
+                showStatus(status, input,
+                    'Minimum length: 8 characters. Must include at least one number and one special character.',
+                    'error'
+                );
+            }
+            setTimeout(() => status.textContent = '', 10000);
         }
 
-        if (pattern.test(password)) {
-            showStatus(status, 'Password meets the criteria', 'success');
-        } else {
-            showStatus(
-            status,
-            'Minimum length: 8 characters. Must include at least one number and one special character.',
-            'error'
-            );
-        }
-        }
 
+        
         function validateConfirmPassword() {
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirm-password').value;
-        const status = document.getElementById('password-match-status');
+            const pass = document.getElementById('password');
+            const input = document.getElementById('confirm-password');
+            const status = document.getElementById('password-match-status');
 
-        if (!confirmPassword) {
-            showStatus(
-            status,
-            'Must match the password above. Example: john123!',
-            'error'
-            );
-            return;
+            if (!input.value) {
+                showStatus(status, input, 'Confirm your password', 'error');
+                return;
+            }
+
+            if (pass.value === input.value) {
+                showStatus(status, input, 'Passwords match', 'success');
+            } else {
+                showStatus(status, input, 'Passwords do not match', 'error');
+            }
+            setTimeout(() => status.textContent = '', 10000);
         }
 
-        if (password === confirmPassword) {
-            showStatus(status, 'Passwords match', 'success');
-        } else {
-            showStatus(status, 'Passwords do not match', 'error');
-        }
-        }
+      
 
         document.getElementById('username').addEventListener('focus', validateUsername);
         document.getElementById('username').addEventListener('keyup', validateUsername);
@@ -261,6 +287,24 @@
 
         document.getElementById('confirm-password').addEventListener('focus', validateConfirmPassword);
         document.getElementById('confirm-password').addEventListener('keyup', validateConfirmPassword);
+
+
+            const card = document.getElementById("card");
+
+        card.addEventListener("mousemove", e => {
+        const r = card.getBoundingClientRect();
+        const x = e.clientX - r.left;
+        const y = e.clientY - r.top;
+
+        card.style.transform = `
+            rotateX(${((y - r.height / 2) / r.height) * -10}deg)
+            rotateY(${((x - r.width / 2) / r.width) * 10}deg)
+        `;
+        });
+
+        card.addEventListener("mouseleave", () => {
+        card.style.transform = "rotateX(0) rotateY(0)";
+        });
     </script>
 
         

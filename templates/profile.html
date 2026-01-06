@@ -7,60 +7,104 @@
     <title>User Profile</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/style.css' %}"> <!-- Link to your CSS file -->
+    <style>
+      /* bottom border */
+    .input-container input {
+        background-color: #ffffff;          
+        border: none;                        
+        border-bottom: 2px solid #ced4da;    
+        border-radius: 0;
+        box-shadow: none;
+        outline: none;
+    }
+
+    .input-container::after{
+        content:'';
+        position:absolute;
+        left:0;
+        bottom:0;
+        height:2px;
+        width:0;
+        background:#0d6efd;      
+        transition: width .35s ease-in-out;
+    }
+    .form-control{
+        background: transparent;
+    }
+
+    .form-control.is-valid,
+    .form-control.is-invalid,
+    .form-control:focus {
+        box-shadow: none !important;
+    
+    }
+
+    .muted-field{
+      pointer-events:none;   
+      opacity:.6;            
+      cursor:not-allowed;
+    }
+    </style>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // Toggle editability based on the checkbox
-            document.getElementById('edit-profile').addEventListener('change', function () {
-                const isEditable = this.checked;
+document.addEventListener("DOMContentLoaded", function () {
 
-                document.querySelectorAll('.editable').forEach(input => {
-                    input.readOnly  = !isEditable;
-                });
+    const toggle = document.getElementById("edit-profile");
+    const inputs = document.querySelectorAll(".editable");
+    const fileInput = document.getElementById("profile-image-upload");
+    const submitBtn = document.getElementById("update-profile-btn");
 
-                
-                document.getElementById('profile-image-upload').disabled = !isEditable;
+    function setEditable(state){
 
-                document.getElementById('update-profile-btn').disabled = !isEditable;
-
-            });
-
-            document.querySelectorAll('.password-icon').forEach(icon => {
-                icon.addEventListener('click', function () {
-                    const passwordField = document.getElementById(this.dataset.target);
-                    if (passwordField.type === 'password') {
-                        passwordField.type = 'text';
-                        this.classList.remove('fa-eye');
-                        this.classList.add('fa-eye-slash');
-                        this.setAttribute('title', 'Hide password');
-                    } else {
-                        passwordField.type = 'password';
-                        this.classList.remove('fa-eye-slash');
-                        this.classList.add('fa-eye');
-                        this.setAttribute('title', 'Show password');
-                    }
-                });
-            });
+        inputs.forEach(input =>{
+            input.readOnly = !state;
+            input.classList.toggle("muted-field", !state); // grey + block cursor
+            input.tabIndex = state ? 0 : -1;               // block focus
         });
 
-        function disableCopyPasteCut(event) {
-            event.preventDefault();
-            
-        }
-        window.onload = function () {
-            
-            var inputFields = document.querySelectorAll('input');
-            
-            
-            inputFields.forEach(function(input) {
-                input.addEventListener('copy', disableCopyPasteCut);
-                input.addEventListener('paste', disableCopyPasteCut);
-                input.addEventListener('cut', disableCopyPasteCut);
-            });
-        };
+        fileInput.disabled = !state;
+        submitBtn.disabled = !state;
+    }
 
-        
+    // FIRST LOAD = disabled
+    setEditable(false);
 
-    </script>
+    // When switch toggles
+    toggle.addEventListener("change", function(){
+        setEditable(this.checked);
+    });
+
+    // Password eye toggle (keep this — unchanged)
+    document.querySelectorAll('.password-icon').forEach(icon => {
+        icon.addEventListener('click', function () {
+            const passwordField = document.getElementById(this.dataset.target);
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                this.classList.remove('fa-eye');
+                this.classList.add('fa-eye-slash');
+                this.setAttribute('title', 'Hide password');
+            } else {
+                passwordField.type = 'password';
+                this.classList.remove('fa-eye-slash');
+                this.classList.add('fa-eye');
+                this.setAttribute('title', 'Show password');
+            }
+        });
+    });
+
+});
+
+// prevent copy paste
+function disableCopyPasteCut(event){ event.preventDefault(); }
+
+window.onload = function () {
+    document.querySelectorAll('input').forEach(input=>{
+        input.addEventListener('copy', disableCopyPasteCut);
+        input.addEventListener('paste', disableCopyPasteCut);
+        input.addEventListener('cut', disableCopyPasteCut);
+    });
+};
+</script>
+
 </head>
 <body class="bg-primary">
     <!-- Header navbar -->
@@ -72,7 +116,7 @@
         <div class="container my-5" data-animate="zoom-in">
             <div class="row justify-content-center">
                 <div class="col-md-6">
-                    <div class="card p-4">
+                    <div class="card p-4" id="card">
                         <h1 >User Profile</h1>
 
                         <form id="profile-form"  method="post" enctype="multipart/form-data">
@@ -118,7 +162,7 @@
                                 <label for="username">Username</label>
                                 <div class="input-container">
                                     <i class="fa fa-user" aria-hidden="true"></i>
-                                    <input style="padding-left:30px;" type="text" id="username" name="username" class="editable"  minlength="3" maxlength="15" placeholder="john123"  pattern="^[a-zA-Z0-9]{3,15}$" title="username must be alphanumeric,3-15 characters, no special characters or spaces. Example: john123" value="{{ request.user.username }}" readonly onkeyup="validateUsername()">
+                                    <input style="padding-left:30px;" type="text" id="username" class="form-control editable" name="username"  minlength="3" maxlength="15" placeholder="john123"  pattern="^[a-zA-Z0-9]{3,15}$" title="username must be alphanumeric,3-15 characters, no special characters or spaces. Example: john123" value="{{ request.user.username }}" readonly onkeyup="validateUsername()">
                                 </div>
                             </div>
                             <div id="username-status" class="small mb-2 "></div>
@@ -127,7 +171,7 @@
                                 <label for="email">Email Address</label>
                                 <div class="input-container">
                                     <i class="fa fa-envelope" aria-hidden="true"></i>
-                                    <input style="padding-left:30px;" type="email" id="email" name="email" class="editable"  placeholder="john.123@example.com" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"  title="apologize, You couldn't  Update email" value="{{ request.user.email }}" readonly onkeyup="validateEmail()">
+                                    <input style="padding-left:30px;" type="email" id="email" class="form-control editable" name="email"   placeholder="john.123@example.com" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"  title="apologize, You couldn't  Update email" value="{{ request.user.email }}" readonly onkeyup="validateEmail()">
                                 </div>
                             </div>
                             <div id="email-status" class="small mb-2 "></div>
@@ -136,7 +180,7 @@
                                 <label for="password">Password</label>
                                 <div class="input-container">
                                     <i class="fa fa-lock" aria-hidden="true"></i>
-                                    <input style="padding-left:30px;" type="password" id="password" name="password" class="editable"  minlength="8" placeholder="Enter your password" pattern="(?=.*\d)(?=.*[!@#$%^&*]).{8,}" title="Minimum length: 8 characters, must include at least one number and one special character. Example: john123!"   onkeyup="validatePassword()">
+                                    <input style="padding-left:30px;" type="password" id="password" class="form-control editable" name="password"   minlength="8" placeholder="Enter your password" pattern="(?=.*\d)(?=.*[!@#$%^&*]).{8,}" title="Minimum length: 8 characters, must include at least one number and one special character. Example: john123!"   onkeyup="validatePassword()">
                                     <i class="fas fa-eye password-icon" data-target="password" title="Show password"></i>
                                 </div>
                             </div>
@@ -146,18 +190,20 @@
                                 <label for="confirm-password">Confirm Password</label>
                                 <div class="input-container">
                                     <i class="fa fa-lock" aria-hidden="true"></i>
-                                    <input style="padding-left:30px;" type="password" id="confirm-password" name="confirm_password" class="editable" minlength="8" placeholder="Confirm your password"  pattern="(?=.*\d)(?=.*[!@#$%^&*])(?!.*\s).{8,}" title="Must match the password entered above. Example: john123!"   onkeyup="validateConfirmPassword()" >
+                                    <input style="padding-left:30px;" type="password" class="form-control editable" id="confirm-password" name="confirm_password"  minlength="8" placeholder="Confirm your password"  pattern="(?=.*\d)(?=.*[!@#$%^&*])(?!.*\s).{8,}" title="Must match the password entered above. Example: john123!"   onkeyup="validateConfirmPassword()" >
                                     <i class="fas fa-eye password-icon" data-target="confirm-password" title="Show password"></i>
                                 </div>
                             </div>
                             <div id="password-match-status" class="small mb-2 "></div>
                             
 
-                            <div class="form-group">
-                                <label class="checkbox-label">
-                                    <input style="width:auto;" class="checkbox" type="checkbox" id="edit-profile"> Enable Editing
-                                </label>                
+                            <div class="form-group form-check form-switch mt-3">
+                              <input class="form-check-input" type="checkbox" id="edit-profile">
+                              <label class="form-check-label" for="edit-profile">
+                                  Enable Editing
+                              </label>
                             </div>
+
 
                             <div class="form-group">
                                 <button type="submit"  id="update-profile-btn" class="button-primary p-2 w-100" disabled>Update Profile</button>
@@ -171,120 +217,128 @@
 
     
 <script>
-function showStatus(element, message, type = '') {
-  element.textContent = message;
-  element.classList.remove('text-success', 'text-danger');
-  if (type === 'success') element.classList.add('text-success');
-  if (type === 'error') element.classList.add('text-danger');
-}
+function showStatus(element, input, message, type = '') {
+            element.textContent = message;
 
-function validateUsername() {
-  const username = document.getElementById('username').value;
-  const status = document.getElementById('username-status');
-  const pattern = /^[a-zA-Z0-9]{3,15}$/;
+            input.classList.remove('is-valid', 'is-invalid');
+            element.classList.remove('text-success', 'text-danger');
 
-  if (!username) {
-    showStatus(
-      status,
-      'Username must be alphanumeric, 3-15 characters, no special characters or spaces.',
-      'error'
-    );
-    return;
-  }
+            if (type === 'success') {
+                input.classList.add('is-valid');
+                element.classList.add('text-success');
+            }
 
-  if (pattern.test(username)) {
-    showStatus(status, 'Username meets the criteria', 'success');
-  } else {
-    showStatus(
-      status,
-      'Username must be alphanumeric, 3-15 characters, no special characters or spaces.',
-      'error'
-    );
-  }
-}
+            if (type === 'error') {
+                input.classList.add('is-invalid');
+                element.classList.add('text-danger');
+            }
+        }
 
-function validateEmail() {
-  const email = document.getElementById('email').value;
-  const status = document.getElementById('email-status');
-  const pattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+        function validateUsername() {
+            const input = document.getElementById('username');
+            const status = document.getElementById('username-status');
+            const pattern = /^[a-zA-Z0-9]{3,15}$/;
 
-  if (!email) {
-      showStatus(
-      status,
-      'Enter valid email. Example: john.123@example.com.',
-      'error'
-      );
-      return;
-  }
+            if (!input.value) {
+                showStatus(status, input,
+                    'Username is required',
+                    'error'
+                );
+                return;
+            }
 
-  if (pattern.test(email)) {
-      showStatus(status, 'Email meets the criteria', 'success');
-  } else {
-      showStatus(
-      status,
-      'Invalid email format. Example: john.123@example.com',
-      'error'
-      );
-  }
-}
+            if (pattern.test(input.value)) {
+                showStatus(status, input, 'Username looks good', 'success');
+            } else {
+                showStatus(status, input,
+                    'Username must be alphanumeric, 3-15 characters, no special characters or spaces',
+                    'error'
+                );
+            }
+            setTimeout(() => status.textContent = '', 10000);
+        }
+        function validateEmail() {
+            const input = document.getElementById('email');
+            const status = document.getElementById('email-status');
+            const pattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+            if (!input.value) {
+                showStatus(status, input, 'Email is required', 'error');
+                return;
+            }
+
+            if (pattern.test(input.value)) {
+                showStatus(status, input, 'Email meets the criteria', 'success');
+            } else {
+                showStatus(status, input, 'Enter valid email. Example: john.123@example.com.', 'error');
+            }
+            setTimeout(() => status.textContent = '', 10000);
+        }
 
 function validatePassword() {
-  const password = document.getElementById('password').value;
-  const status = document.getElementById('password-status');
-  const pattern = /^(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+            const input = document.getElementById('password');
+            const status = document.getElementById('password-status');
+            const pattern = /^(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
 
-  if (!password) {
-    showStatus(
-      status,
-      'Minimum length: 8 characters. Must include at least one number and one special character.',
-      'error'
-    );
-    return;
-  }
+            if (pattern.test(input.value)) {
+                showStatus(status, input, 'password meets the criteria', 'success');
+            } else {
+                showStatus(status, input,
+                    'Minimum length: 8 characters. Must include at least one number and one special character.',
+                    'error'
+                );
+            }
+            setTimeout(() => status.textContent = '', 10000);
+        }
 
-  if (pattern.test(password)) {
-    showStatus(status, 'Password meets the criteria', 'success');
-  } else {
-    showStatus(
-      status,
-      'Minimum length: 8 characters. Must include at least one number and one special character.',
-      'error'
-    );
-  }
-}
 
-function validateConfirmPassword() {
-  const password = document.getElementById('password').value;
-  const confirmPassword = document.getElementById('confirm-password').value;
-  const status = document.getElementById('password-match-status');
+        function validateConfirmPassword() {
+            const pass = document.getElementById('password');
+            const input = document.getElementById('confirm-password');
+            const status = document.getElementById('password-match-status');
 
-  if (!confirmPassword) {
-    showStatus(
-      status,
-      'Must match the password above. Example: john123!',
-      'error'
-    );
-    return;
-  }
+            if (!input.value) {
+                showStatus(status, input, 'Confirm your password', 'error');
+                return;
+            }
 
-  if (password === confirmPassword) {
-    showStatus(status, 'Passwords match', 'success');
-  } else {
-    showStatus(status, 'Passwords do not match', 'error');
-  }
-}
+            if (pass.value === input.value) {
+                showStatus(status, input, 'Passwords match', 'success');
+            } else {
+                showStatus(status, input, 'Passwords do not match', 'error');
+            }
+            setTimeout(() => status.textContent = '', 10000);
+        }
 
-document.getElementById('username').addEventListener('focus', validateUsername);
-document.getElementById('username').addEventListener('keyup', validateUsername);
+        document.getElementById('username').addEventListener('focus', validateUsername);
+        document.getElementById('username').addEventListener('keyup', validateUsername);
 
-document.getElementById('email').addEventListener('focus', validateEmail);
-document.getElementById('email').addEventListener('keyup', validateEmail);
+        document.getElementById('email').addEventListener('focus', validateEmail);
+        document.getElementById('email').addEventListener('keyup', validateEmail);
 
-document.getElementById('password').addEventListener('focus', validatePassword);
-document.getElementById('password').addEventListener('keyup', validatePassword);
+        document.getElementById('password').addEventListener('focus', validatePassword);
+        document.getElementById('password').addEventListener('keyup', validatePassword);
 
-document.getElementById('confirm-password').addEventListener('focus', validateConfirmPassword);
-document.getElementById('confirm-password').addEventListener('keyup', validateConfirmPassword);
+        document.getElementById('confirm-password').addEventListener('focus', validateConfirmPassword);
+        document.getElementById('confirm-password').addEventListener('keyup', validateConfirmPassword);
+
+
+    const card = document.getElementById("card");
+
+        card.addEventListener("mousemove", e => {
+        const r = card.getBoundingClientRect();
+        const x = e.clientX - r.left;
+        const y = e.clientY - r.top;
+
+        card.style.transform = `
+            rotateX(${((y - r.height / 2) / r.height) * -10}deg)
+            rotateY(${((x - r.width / 2) / r.width) * 10}deg)
+        `;
+        });
+
+        card.addEventListener("mouseleave", () => {
+        card.style.transform = "rotateX(0) rotateY(0)";
+        });
 </script>
     
 </body>

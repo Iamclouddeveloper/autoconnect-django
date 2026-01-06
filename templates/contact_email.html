@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>New Contact Message</title>
+
+<style>
+body {
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+  background-color: #f4f6f9;
+  margin: 0;
+  padding: 30px 10px;
+}
+.email-wrapper {
+  max-width: 600px;
+  margin: auto;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+.email-header {
+  background: linear-gradient(135deg, #3a5f7d, #263f54);
+  padding: 22px;
+  text-align: center;
+}
+.email-header h1 {
+  color: #fff;
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+}
+.content {
+  padding: 25px;
+}
+.info-box {
+  background: #f1f5f9;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 15px;
+  font-size: 15px;
+}
+.email-footer {
+  background-color: #0e2a38;
+  color: #fff;
+  text-align: center;
+  font-size: 13px;
+  padding: 15px;
+}
+</style>
+</head>
+
+<body>
+<div class="email-wrapper">
+
+  <div class="email-header">
+    <h1>AutoNgx</h1>
+    <p style="margin-top:6px; color:#fff;">
+      Website Contact Notification
+    </p>
+  </div>
+
+  <div class="content">
+    <h2 style="color:#1e90ff;">Contact Details</h2>
+
+    <div class="info-box">
+      <strong>Name:</strong> {{ name }}<br>
+      <strong>Email:</strong> {{ email }}<br>
+      <strong>Company:</strong> {{ company|default:"N/A" }}
+    </div>
+
+    <h3 style="color:#333;">Message</h3>
+    <p style="font-size:15px; color:#444; white-space:pre-line;">
+      {{ message }}
+    </p>
+  </div>
+
+  <div class="email-footer">
+    <p>
+      Call:
+      <a href="tel:+447854052482" style="color:#fff;">
+        07854052482
+      </a><br>
+      Email:
+      <a href="mailto:support@AutoNgx.com" style="color:#fff;">
+        support@AutoNgx.com
+      </a>
+    </p>
+    © AutoNgx — Vehicle Connectivity & Management
+  </div>
+
+</div>
+</body>
+</html>

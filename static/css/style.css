@@ -136,7 +136,7 @@
   height: 600px;
   
   overflow: hidden;
-  color: #fff;
+ 
 }
 
 /* SLIDES CONTAINER */
@@ -866,7 +866,7 @@ form input:focus, form select:focus , .form-control:focus {
 .password-icon {
   position: absolute;
   top: 50%;
-  right: 10px;
+  right: 30px;
   transform: translateY(-50%);
   cursor: pointer;
   color: var(--accent); /* Color for the icon */
@@ -930,7 +930,7 @@ input[type="password"]::-webkit-inner-spin-button {
   height: 120px;
   object-fit: cover;
   border-radius: 50%;
-  border: 3px solid turquoise;
+  border: 3px solid var(--primary);
   cursor: pointer;
 }
 

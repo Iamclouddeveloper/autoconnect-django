@@ -4,10 +4,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoConnect - Signin</title>
+    <title>AutoNgx - Signin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/style.css' %}"> <!-- Link to your CSS file -->
     <style>
+
+    /* bottom border */
+    .input-container input {
+        background-color: #ffffff;          
+        border: none;                        
+        border-bottom: 2px solid #ced4da;    
+        border-radius: 0;
+        box-shadow: none;
+        outline: none;
+    }
+
+    .input-container::after{
+        content:'';
+        position:absolute;
+        left:0;
+        bottom:0;
+        height:2px;
+        width:0;
+        background:#0d6efd;      
+        transition: width .35s ease-in-out;
+    }
+    .form-control{
+        background: transparent;
+    }
+
+    .form-control.is-valid,
+    .form-control.is-invalid,
+    .form-control:focus {
+        box-shadow: none !important;
+    
+    }
         
     .scene {
     position: fixed;
@@ -141,7 +172,7 @@
             <div class="row justify-content-center">
                 <div class="col-md-6">
                     <!-- BACKGROUND -->
-                    <div class="card p-4 ">
+                    <div class="card p-4 " id="card">
                         
                         <h1 >User Sign In</h1>
 
@@ -151,7 +182,7 @@
                                 <label for="email">Email Address</label>
                                 <div class="input-container">
                                     <i class="fa fa-envelope" aria-hidden="true"></i>
-                                    <input style="padding-left:30px;" type="email" id="email" name="email" required placeholder="john.123@example.com" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"  title="Example: john.123@example.com. Must be a valid email format" onkeyup="validateEmail()">
+                                    <input style="padding-left:30px;" class="form-control" type="email" id="email" name="email" required placeholder="john.123@example.com" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"  title="Example: john.123@example.com. Must be a valid email format" onkeyup="validateEmail()">
                                 </div>
                             </div>
                             <div id="email-status" class="small mb-2"></div>
@@ -160,7 +191,7 @@
                                 <label for="password">Password</label>
                                 <div class="input-container">
                                     <i class="fa fa-lock" ></i>
-                                    <input style="padding-left:30px;" type="password"  id="password" name="password" required minlength="8" placeholder="Enter your password" pattern="(?=.*\d)(?=.*[!@#$%^&*]).{8,}" title="Minimum length: 8 characters, must include at least one number and one special character. Example: john123!" onkeyup="validatePassword()">
+                                    <input style="padding-left:30px;" class="form-control" type="password"  id="password" name="password" required minlength="8" placeholder="Enter your password" pattern="(?=.*\d)(?=.*[!@#$%^&*]).{8,}" title="Minimum length: 8 characters, must include at least one number and one special character. Example: john123!" onkeyup="validatePassword()">
                                     <i class="fas fa-eye password-icon" id="toggle-password" title="Show password"></i>
                                 </div>
                             </div>
@@ -187,95 +218,93 @@
 
 
     <script>
-        function validateEmail() {
-            var email = document.getElementById('email').value;
-            var pattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
-            var status = document.getElementById('email-status');
-        
-            if (pattern.test(email)) {    
-                status.textContent = 'Email meets the criteria'; 
-                status.classList.remove('text-danger');
-                status.classList.add('text-success');
-            } else {
-                status.textContent = 'Invalid email format, Example: john.123@example.com';
-                status.classList.remove('text-success');
-                status.classList.add('text-danger');
-                
+        function showStatus(element, input, message, type = '') {
+            element.textContent = message;
+
+            input.classList.remove('is-valid', 'is-invalid');
+            element.classList.remove('text-success', 'text-danger');
+
+            if (type === 'success') {
+                input.classList.add('is-valid');
+                element.classList.add('text-success');
             }
-            setTimeout(function() {
-                status.textContent = '';
-            }, 10000);
+
+            if (type === 'error') {
+                input.classList.add('is-invalid');
+                element.classList.add('text-danger');
+            }
+        }
+
+        function validateEmail() {
+            const emailInput = document.getElementById('email');
+            const status = document.getElementById('email-status');
+
+            const pattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+            if (pattern.test(emailInput.value)) {
+                showStatus(status, emailInput, 'Email meets the criteria', 'success');
+            } else {
+                showStatus(
+                    status,
+                    emailInput,
+                    'Invalid email format. Example: john.123@example.com',
+                    'error'
+                );
+            }
+
+            setTimeout(() => status.textContent = '', 10000);
         }
 
 
-        document.getElementById('email').addEventListener('focus', function() {
-            var email = this.value;
-            var status = document.getElementById('email-status');
-            var pattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
-        
-            if (pattern.test(email)) {
-                status.textContent = 'Email meets the criteria','green';
-                status.classList.remove('text-danger');
-                status.classList.add('text-success');
-                
+
+        document.getElementById('email').addEventListener('focus', function () {
+            const status = document.getElementById('email-status');
+            const pattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+
+            if (pattern.test(this.value)) {
+                showStatus(status, this, 'Email meets the criteria', 'success');
             } else {
-                status.textContent = 'Enter valid email,' +
-                  'Example: john.123@example.com';
-                  status.classList.remove('text-success');
-                    status.classList.add('text-danger');
-                
+                showStatus(status, this, 'Enter valid email. Example: john.123@example.com', 'error');
             }
 
-            setTimeout(function() {
-                status.textContent = '';
-            }, 10000);
+            setTimeout(() => status.textContent = '', 10000);
         });
+
         
         function validatePassword() {
-            var password = document.getElementById('password').value;
-            var pattern = /^(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
-            var status = document.getElementById('password-status');
-        
-            if (pattern.test(password)) {
-                status.textContent = 'Password meets the criteria';
-                 status.classList.remove('text-danger');
-                 status.classList.add('text-success');
-                
+            const passwordInput = document.getElementById('password');
+            const status = document.getElementById('password-status');
+
+            const pattern = /^(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+
+            if (pattern.test(passwordInput.value)) {
+                showStatus(status, passwordInput, 'Password meets the criteria', 'success');
             } else {
-                status.textContent = 'Minimum length: 8 characters.' +
-                    'Must include at least one number and one special character.' +
-                    'Example: john123!';
-                    status.classList.remove('text-success');
-                    status.classList.add('text-danger');
-                
+                showStatus(
+                    status,
+                    passwordInput,
+                    'Min 8 chars, include a number & special char. Example: john123!',
+                    'error'
+                );
             }
-            setTimeout(function() {
-                status.textContent = '';
-            }, 10000);
+
+            setTimeout(() => status.textContent = '', 10000);
         }
 
-        document.getElementById('password').addEventListener('focus', function() {
-            var password = this.value;
-            var status = document.getElementById('password-status');
-            var pattern = /^(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
-        
-            if (pattern.test(password)) {
-                status.textContent = 'Password meets the criteria';
-                 status.classList.remove('text-danger');
-                 status.classList.add('text-success');
-                
+
+        document.getElementById('password').addEventListener('focus', function () {
+            const status = document.getElementById('password-status');
+            const pattern = /^(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+
+            if (pattern.test(this.value)) {
+                showStatus(status, this, 'Password meets the criteria', 'success');
             } else {
-                status.textContent = 'Enter valid password .'+
-                 'Example: john123!';
-                 status.classList.remove('text-success');
-                 status.classList.add('text-danger');
-               
+                showStatus(status, this, 'Example: john123!', 'error');
             }
 
-            setTimeout(function() {
-                status.textContent = '';
-            }, 10000);
+            setTimeout(() => status.textContent = '', 10000);
         });
+
         
        
         document.addEventListener("mousemove", e => {
@@ -296,7 +325,25 @@
             }
         });
         });
+    
+        const card = document.getElementById("card");
+
+        card.addEventListener("mousemove", e => {
+        const r = card.getBoundingClientRect();
+        const x = e.clientX - r.left;
+        const y = e.clientY - r.top;
+
+        card.style.transform = `
+            rotateX(${((y - r.height / 2) / r.height) * -10}deg)
+            rotateY(${((x - r.width / 2) / r.width) * 10}deg)
+        `;
+        });
+
+        card.addEventListener("mouseleave", () => {
+        card.style.transform = "rotateX(0) rotateY(0)";
+        });
     </script>
+
 
 </body>
 </html>
