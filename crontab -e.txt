@@ -1,6 +1,6 @@
 
 
-# Queue reminders once per day at 17:10
+# Queue reminders once per day 
 36 18 * * * cd /home/renix-admin/renixauto && /home/renix-admin/renixauto/venv/bin/python manage.py reminders >> /home/renix-admin/renixauto/reminders.log 2>&1
 
 # Send emails every 2 minutes

@@ -1,0 +1,38 @@
+1 . Login to MySQL as root:
+     
+     * sudo mysql -u root -p
+
+(It will prompt for the password – just press Enter if no password is set yet.)
+
+2. At the mysql> prompt, update the root user authentication method:
+
+    * ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'renixderwent29';
+
+    * FLUSH PRIVILEGES;
+
+    * EXIT;
+
+3. Now re-login with the new password:
+
+   * mysql -u root -p
+    
+   (Enter the new password when prompted.)
+
+4 . Create the database:
+
+      * CREATE DATABASE autoconnect;
+
+       * EXIT;
+5 .Import the SQL file into the newly created database:
+   
+    * mysql -u root -p autoconnect < autoconnect.sql
+
+
+6. Update the password in the application (app.py) to match the new MySQL root password:
+
+
+
+sudo apt update
+sudo apt install python3-dev default-libmysqlclient-dev build-essential pkg-config
+
+
