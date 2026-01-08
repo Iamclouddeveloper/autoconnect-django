@@ -6,7 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <title>Navbar</title>
-
+<link rel="stylesheet"
+ href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
 <!-- Bootstrap CSS -->
 <link rel="stylesheet" href="{% static 'bootstrap/bootstrap.min.css' %}">
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
@@ -19,8 +20,8 @@
   
   <div class="container-fluid">
 
-    <a class="navbar-brand text-white" href="https://renixauto.com">
-      AutoNgx
+    <a class="navbar-brand" href="#">
+        <img src="{% static 'images/logo.png' %}" alt="AUTiQ" class="site-logo">
     </a>
 
    <button class="navbar-toggler" id="navbarToggle"
@@ -59,6 +60,20 @@
 
        
         {% else %}
+
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'search_vrn' %}active{% endif %}"
+            href="{% url 'search_vrn' %}">
+            Search Vehicle
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'search_mot' %}active{% endif %}"
+            href="{% url 'search_mot' %}">
+            MOT History
+          </a>
+        </li>
+
         <li class="nav-item">
           <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}"
             href="{% url 'login' %}">
@@ -71,6 +86,8 @@
             Sign Up
           </a>
         </li>
+
+
         {% endif %}
 
         

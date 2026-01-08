@@ -25,8 +25,8 @@
                         <form id="addVehicleForm" method="post" action="{% url 'add_vehicle' %}">
                             {% csrf_token %}
                             <div class="form-group">
-                                <label for="vrn">Enter Vehicle Registration Number:</label>
-                                <input type="text" id="vrn" name="vrn" required placeholder="Enter VRN number">
+                                <label for="vrn">Enter VRN Example : V777ELU</label>
+                                <input type="text" id="vrn" name="vrn" required placeholder="Enter vehicle registration number (VRN)">
                             </div>
                             <div class="form-group">
                                 <button type="submit" class="button-primary w-100">Submit</button>

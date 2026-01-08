@@ -510,7 +510,7 @@ def format_json_keys(data):
 
     return ordered_data
 
-@login_required
+
 @csrf_exempt
 def search_vrn(request):
     if request.method == 'POST':
@@ -636,7 +636,6 @@ def get_access_token():
 
 
 @csrf_exempt  
-@login_required
 def search_mot(request):
     
 
@@ -672,14 +671,18 @@ def search_mot(request):
 
             # DVSA TAPI returns ONE vehicle object
             vehicle = json_data
-            try:
-                # db_vehicle = Vehicle.objects.get(vrn=vrn)
-                db_vehicle = Vehicle.objects.get(user=request.user, vrn=vrn)
-                mot_expiry_date = db_vehicle.mot_expiry_date.strftime('%d-%m-%Y') if db_vehicle.mot_expiry_date else 'N/A'
-                tax_due_date = db_vehicle.tax_due_date.strftime('%d-%m-%Y') if db_vehicle.tax_due_date else 'N/A'
-            except Vehicle.DoesNotExist:
+            if request.user.is_authenticated:
+                try:
+                    db_vehicle = Vehicle.objects.get(user=request.user, vrn=vrn)
+                    mot_expiry_date = db_vehicle.mot_expiry_date.strftime('%d-%m-%Y') if db_vehicle.mot_expiry_date else 'N/A'
+                    tax_due_date = db_vehicle.tax_due_date.strftime('%d-%m-%Y') if db_vehicle.tax_due_date else 'N/A'
+                except Vehicle.DoesNotExist:
+                    mot_expiry_date = 'N/A'
+                    tax_due_date = 'N/A'
+            else:
                 mot_expiry_date = 'N/A'
                 tax_due_date = 'N/A'
+
 
 
             vehicle_details = {
@@ -1108,3 +1111,5 @@ def delete_vehicle(request, pk):
     vehicle.delete()
     messages.success(request, "Vehicle deleted successfully")
     return redirect('my_vehicle')
+
+

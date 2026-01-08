@@ -210,6 +210,15 @@
         .collapsible:hover {
             background-color:var(--accent);
         }
+
+        .chevron {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+        }
+
         
         .content {
             display: none;
@@ -431,15 +440,17 @@
                 Show All MOT Test Results
             </label>
         </div>
+        <div class="button-container my-2" id="pdf-container">
+            <button id="pdf-button"  class="button-primary d-none pdf-btn" onclick="generatePDF()">Export to PDF</button>
+        </div>
+       
 
         <!-- MOT Report Section -->
         <div id="mot-report">
             <!-- MOT details will be inserted here -->
         </div>
 
-        <div class="button-container" id="pdf-container">
-            <button id="pdf-button"  class="button-primary d-none" onclick="generatePDF()">Export to PDF</button>
-        </div>
+        
     </div>
         <div id="confirmModal" class="modal"> 
             <div class="modal-content"> 
@@ -569,9 +580,11 @@ $(document).ready(function () {
                     .scrollIntoView({ behavior: 'smooth', block: 'start' });
     
                     // Dynamically show the PDF button
-                     const btn = document.getElementById('pdf-button'); 
-                        btn.classList.remove('d-none'); 
+                    document.querySelectorAll('.pdf-btn').forEach(btn => {
+                        btn.classList.remove('d-none');
                         btn.style.display = 'inline-block';
+                    });
+
                     document.querySelector('.show-all-checkbox label').style.display = 'block';
                 }
             })
@@ -641,14 +654,22 @@ $(document).ready(function () {
             let reportHtml = '';
     
             data.forEach((record, index) => {
-                const isCollapsed = !document.getElementById('show-all').checked && index !== 0 ? 'display: none;' : '';
+               const isOpenByDefault = index === 0 || document.getElementById('show-all').checked;
+
+                const contentStyle = isOpenByDefault ? 'display: block;' : 'display: none;';
+                const iconClass = isOpenByDefault ? 'bi-chevron-up' : 'bi-chevron-down';
+
                 const testResultClass = record.testResult.toUpperCase() === 'PASSED' ? 'pass' : 'fail';
     
                 reportHtml += `<div class="mot-block">
-                    <button class="collapsible"> ${record.motTestNumber || 'N/A'}
-                        <a class="search-link" href="#"><i class="bi bi-chevron-up"></i></a>
+                    <button class="collapsible">
+                        ${record.motTestNumber || 'N/A'}
+                        <span class="chevron">
+                            <i class="bi ${iconClass}"></i>
+                        </span>
                     </button>
-                    <div class="content" style="${isCollapsed}">
+
+                    <div class="content" style="${contentStyle}">
                         <table class="mot-table">
                             <tbody>
                                 <tr>
@@ -682,53 +703,45 @@ $(document).ready(function () {
                 </div>`;
             });
             container.innerHTML = reportHtml;
+            initCollapsibles();
     
             // Initialize collapsible buttons
-            const collapsibles = document.querySelectorAll(".collapsible");
+           
             
     
-            collapsibles.forEach(button => {
-                button.addEventListener("click", function () {
-                    this.classList.toggle("active");
-    
-                    const content = this.nextElementSibling;
-                    if (content.style.display === "block") {
-                        content.style.display = "none";
-                    } else {
-                        content.style.display = "block";
-                    }
-                });
-            });
-        }
-    
-        // Toggle collapsible content
-        document.addEventListener('DOMContentLoaded', () => {
-            const coll = document.getElementsByClassName("collapsible");
-            for (let i = 0; i < coll.length; i++) {
-                coll[i].addEventListener("click", function () {
-                    this.classList.toggle("active");
-                    const content = this.nextElementSibling;
-                    if (content.style.display === "block") {
-                        content.style.display = "none";
-                    } else {
-                        content.style.display = "block";
-                    }
+            function initCollapsibles() {
+                document.querySelectorAll(".collapsible").forEach(button => {
+                    button.addEventListener("click", function () {
+                        const content = this.nextElementSibling;
+                        const icon = this.querySelector(".chevron i");
+
+                        const isOpen = content.style.display === "block";
+
+                        content.style.display = isOpen ? "none" : "block";
+                        icon.classList.toggle("bi-chevron-up", !isOpen);
+                        icon.classList.toggle("bi-chevron-down", isOpen);
+                    });
                 });
             }
-        });
+
+
+        }
+    
+        
         
     
 
         function toggleAllMOTResults() {
             const isChecked = document.getElementById('show-all').checked;
-            const allMotBlocks = document.querySelectorAll('.mot-block');
-            
-            allMotBlocks.forEach(block => {
+            document.querySelectorAll('.mot-block').forEach(block => {
                 const content = block.querySelector('.content');
-                if (content) {
-                    content.style.display = isChecked ? 'block' : 'none';
-                }
+                const icon = block.querySelector('.chevron i');
+
+                content.style.display = isChecked ? 'block' : 'none';
+                icon.classList.toggle('bi-chevron-up', isChecked);
+                icon.classList.toggle('bi-chevron-down', !isChecked);
             });
+
         
             
         
@@ -740,19 +753,9 @@ $(document).ready(function () {
                 });
             }
         }
-        document.addEventListener('keydown', function() {
-            document.getElementById('vehicle-details').innerHTML = '';
-            document.getElementById('mot-report').innerHTML = '';
-            document.querySelector('.show-all-checkbox label').style.display = 'none';
-            document.getElementById('pdf-button').style.display = 'none';
-        });
         
-        document.addEventListener('click', function (e) {
-            if (e.target.classList.contains('search-link')) {
-                e.preventDefault();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        });
+        
+        
 
         // Generate PDF using the selected VRN and vehicle details
         async function generatePDF() {

@@ -23,15 +23,51 @@
             vrnInput.addEventListener('input', clearTable);
         });
                 
-        function showErrorModal(message) {
-            document.getElementById('errorModalMessage').innerText = message;
+        function showErrorModal(message, type = 'error') {
+            const header = document.getElementById('errorModalHeader');
+            const title = document.getElementById('errorModalTitle');
+            const icon = document.getElementById('errorModalIcon');
+            const body = document.getElementById('errorModalMessage');
+            const button = document.getElementById('errorModalBtn');
+
+            header.classList.remove('bg-danger', 'bg-success');
+            button.classList.remove('btn-danger', 'btn-success');
+
+            if (type === 'success') {
+                header.classList.add('bg-success');
+                title.innerText = 'Success';
+                icon.className = 'bi bi-check-circle me-2';
+                button.classList.add('btn-success');
+            } else {
+                header.classList.add('bg-danger');
+                title.innerText = 'Error';
+                icon.className = 'bi bi-exclamation-circle me-2';
+                button.classList.add('btn-danger');
+            }
+
+            body.innerText = message;
+
             const modal = new bootstrap.Modal(document.getElementById('errorModal'));
             modal.show();
         }
 
 
+            // Django CSRF helper
+            function getCSRFToken() {
+                return document.cookie
+                    .split('; ')
+                    .find(row => row.startsWith('csrftoken='))
+                    ?.split('=')[1];
+            }
+
+
         async function searchVRN(event) {
             event.preventDefault();
+            const loginNotice = document.getElementById('login-notice');
+            if (loginNotice) {
+                loginNotice.style.display = 'none';
+            }
+
             
             const vrn = document.getElementById('vrn').value.trim();
             if (!vrn) {
@@ -56,6 +92,16 @@
                         document.getElementById('pdf-button').style.display = 'none';
                     } else {
                         displayVehicleDetails(data);
+                        const loginNotice = document.getElementById('login-notice');
+                        if (loginNotice) {
+                            loginNotice.style.display = 'block';
+                        }
+
+                        const addBtn = document.getElementById('add-vehicle-btn');
+                        if (addBtn) {
+                            addBtn.classList.remove('d-none');
+                        }
+
                         const btn = document.getElementById('pdf-button'); 
                         btn.classList.remove('d-none'); 
                         btn.style.display = 'inline-block';
@@ -108,6 +154,15 @@
         function clearTable() {
             document.getElementById('vehicle-details').innerHTML = '';
             document.getElementById('pdf-button').style.display = 'none';
+            const loginNotice = document.getElementById('login-notice');
+            if (loginNotice) {
+                loginNotice.style.display = 'none';
+            }
+
+            const addBtn = document.getElementById('add-vehicle-btn');
+            if (addBtn) {
+                addBtn.classList.add('d-none');
+            }
         }
 
         async function generatePDF() {
@@ -149,6 +204,55 @@
                 doc.save(`Vehicle-Details-${vrn}.pdf`);
             } else {
                 alert('No data to export.');
+            }
+        }
+
+
+
+
+
+
+        function openAddVehicleModal() {
+            const vrn = document.getElementById('vrn').value.trim();
+            document.getElementById('confirm-vrn').innerText = vrn;
+
+            const modal = new bootstrap.Modal(
+                document.getElementById('addVehicleModal')
+            );
+            modal.show();
+        }
+
+        async function confirmAddVehicle() {
+            const vrn = document.getElementById('vrn').value.trim();
+
+            try {
+                const response = await fetch('/add-vehicle/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify({ vrn })
+                });
+
+                const data = await response.json();
+
+                bootstrap.Modal.getInstance(
+                    document.getElementById('addVehicleModal')
+                ).hide();
+
+                if (response.status === 201) {
+                    showErrorModal(data.message,'success'); // reuse success modal
+                } 
+                else if (response.status === 409) {
+                    showErrorModal('Vehicle already added.');
+                }
+                else {
+                    showErrorModal(data.error || 'Failed to add vehicle.');
+                }
+
+            } catch (error) {
+                showErrorModal('Service unavailable. Please try again.');
             }
         }
     </script>
@@ -206,7 +310,12 @@
 </head>
 <body class="bg-primary">
     <!-- Header navbar -->
-    {% include 'side_navbar.html' %}
+    {% if request.user.is_authenticated %}
+        {% include 'side_navbar.html' %}
+    {% else %}
+        {% include 'navbar.html' %}
+    {% endif %}
+
 
     <section >
         <div class="container my-5" data-animate="fade-in">
@@ -218,7 +327,7 @@
         <form onsubmit="searchVRN(event)" class="form">
             {% csrf_token%}
             <div class="form-group">
-                
+                <label for="vrn" style="text-align: start;">Enter VRN Example : V777ELU</label>
                 <input type="text" id="vrn" name="vrn" required placeholder="Enter vehicle registration number (VRN)">
             </div>
 
@@ -230,36 +339,93 @@
         <table id="vehicle-details">
             <!-- Vehicle details will be inserted here -->
         </table>
+        <div class="button-container my-2 d-flex gap-2 justify-content-center">
+            
+                <button id="pdf-button" class="button-primary d-none" onclick="generatePDF()">
+                    Export to PDF
+                </button>
+            
 
-        <div class="button-container">
-            <button id="pdf-button" class="button-primary d-none" onclick="generatePDF()">Export to PDF</button>
+            {% if request.user.is_authenticated %}
+                <button id="add-vehicle-btn" class="button-primary d-none" onclick="openAddVehicleModal()">
+                    Add Vehicle
+                </button>
+            {% endif %}
         </div>
+
+
+        {% if not request.user.is_authenticated %}
+        <div id="login-notice" class="notification-box" style="display:none; margin-top:15px;">
+          
+            <p>
+                <strong>Save & track your vehicles!</strong><br>
+                Create an account to store VRNs, receive MOT & tax reminders,
+                and access your full vehicle history anytime.<br>
+                <a href="{% url 'register' %}"  class="text-primary fw-bold">Register now</a>
+                or
+                <a href="{% url 'login' %}"  class="text-primary fw-bold">Login</a>
+            </p>
+        </div>
+        {% endif %}
+
         </div>
         </div>
         </div>
     </section>
 
-        <!-- Error Modal -->
-    <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+        <!-- Status / Error Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0">
+
+      <div id="errorModalHeader" class="modal-header text-white">
+        <h5 class="modal-title">
+          <i id="errorModalIcon" class="me-2"></i>
+          <span id="errorModalTitle">Message</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body text-center">
+        <p id="errorModalMessage" class="mb-0 fw-semibold"></p>
+      </div>
+
+      <div class="modal-footer">
+        <button id="errorModalBtn" type="button" class="btn" data-bs-dismiss="modal">
+          OK
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+    <div class="modal fade" id="addVehicleModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0">
-        <div class="modal-header bg-danger text-white">
-            <h5 class="modal-title">
-            <i class="bi bi-exclamation-circle me-2"></i>Message
-            </h5>
+        <div class="modal-header bg-info text-white">
+            <h5 class="modal-title">Add Vehicle</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body text-center">
-            <p id="errorModalMessage" class="mb-0 fw-semibold"></p>
+
+        <div class="modal-body ">
+            <p>
+            Do you want to add vehicle 
+            <strong id="confirm-vrn"></strong>
+            to your account?
+            </p>
         </div>
+
         <div class="modal-footer">
-            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
-            OK
-            </button>
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmAddVehicle()">Confirm</button>
         </div>
         </div>
     </div>
     </div>
+
+
 
 </body>
 </html>

@@ -11,9 +11,6 @@
     <style>
         
 
-        
-        
-
         form {
             text-align: center;
             margin-bottom: 20px;
@@ -80,6 +77,14 @@
 
         .collapsible:hover {
             background-color: var(--accent);
+        }
+
+        .chevron {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
         }
 
         .content {
@@ -162,7 +167,12 @@
 </head>
 <body class="bg-primary" >
     <!-- Header navbar -->
-    {% include 'side_navbar.html' %}
+    {% if request.user.is_authenticated %}
+        {% include 'side_navbar.html' %}
+    {% else %}
+        {% include 'navbar.html' %}
+    {% endif %}
+
 
     <section data-animate="fade-in">
         <div class="container my-5" >
@@ -173,6 +183,7 @@
 
         <form id="mot-form" onsubmit="searchMOT(event)"  class="form">
             <div class="form-group">
+                <label for="vrn" style="text-align: start;">Enter VRN Example : V777ELU</label>
                 <input type="text" id="vrn" name="vrn" value="{{ vrn }}" required placeholder="Enter vehicle registration number (VRN)">
             </div>
             <div class="form-group">
@@ -190,14 +201,42 @@
                 Show All MOT Test Results
             </label>
         </div>
+        <div class="button-container my-2 d-flex gap-2 justify-content-center">
+            <button id="pdf-button" class="button-primary d-none" onclick="generatePDF()">
+                Export to PDF
+            </button>
+
+            {% if request.user.is_authenticated %}
+            <button id="add-vehicle-btn" class="button-primary d-none" onclick="openAddVehicleModal()">
+                Add Vehicle
+            </button>
+            {% endif %}
+        </div>
+
 
         <div id="mot-report">
             <!-- MOT details will be inserted here -->
         </div>
 
-        <div class="button-container">
-            <button id="pdf-button" class="button-primary d-none" onclick="generatePDF()">Export to PDF</button>
+        {% if not request.user.is_authenticated %}
+        <div id="login-notice" class="notification-box" style="display:none;">
+            <p>
+                 <strong>Get notified & save records!</strong><br>
+                Add your vehicles and VRNs to receive MOT & tax reminders,  
+                and access your full MOT history anytime.<br><br>
+
+                <a href="{% url 'register' %}" class="text-primary fw-bold">
+                    Create an account now
+                </a>
+                or
+                <a href="{% url 'login' %}" class="text-primary fw-bold">
+                    login
+                </a>
+                to unlock these features.
+            </p>
         </div>
+        {% endif %}
+
         </div>
         </div>
         </div>
@@ -207,36 +246,100 @@
 
     
     <!-- Error Modal -->
-    <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+    <!-- Status / Error Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0">
+
+      <div id="errorModalHeader" class="modal-header text-white">
+        <h5 class="modal-title">
+          <i id="errorModalIcon" class="me-2"></i>
+          <span id="errorModalTitle">Message</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body text-center">
+        <p id="errorModalMessage" class="mb-0 fw-semibold"></p>
+      </div>
+
+      <div class="modal-footer">
+        <button id="errorModalBtn" type="button" class="btn" data-bs-dismiss="modal">
+          OK
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+    <div class="modal fade" id="addVehicleModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0">
-        <div class="modal-header bg-danger text-white">
-            <h5 class="modal-title">
-            <i class="bi bi-exclamation-circle me-2"></i>Message
-            </h5>
+        <div class="modal-header bg-info text-white">
+            <h5 class="modal-title">Add Vehicle</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body text-center">
-            <p id="errorModalMessage" class="mb-0 fw-semibold"></p>
+
+        <div class="modal-body ">
+            <p>
+            Do you want to add vehicle 
+            <strong id="confirm-vrn"></strong>
+            to your account?
+            </p>
         </div>
+
         <div class="modal-footer">
-            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
-            OK
-            </button>
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-primary" onclick="confirmAddVehicle()">Confirm</button>
         </div>
         </div>
     </div>
     </div>
+
 
 
     
 
     <script>
-        function showErrorModal(message) {
-            document.getElementById('errorModalMessage').innerText = message;
+        function showErrorModal(message, type = 'error') {
+            const header = document.getElementById('errorModalHeader');
+            const title = document.getElementById('errorModalTitle');
+            const icon = document.getElementById('errorModalIcon');
+            const body = document.getElementById('errorModalMessage');
+            const button = document.getElementById('errorModalBtn');
+
+            header.classList.remove('bg-danger', 'bg-success');
+            button.classList.remove('btn-danger', 'btn-success');
+
+            if (type === 'success') {
+                header.classList.add('bg-success');
+                title.innerText = 'Success';
+                icon.className = 'bi bi-check-circle me-2';
+                button.classList.add('btn-success');
+            } else {
+                header.classList.add('bg-danger');
+                title.innerText = 'Error';
+                icon.className = 'bi bi-exclamation-circle me-2';
+                button.classList.add('btn-danger');
+            }
+
+            body.innerText = message;
+
             const modal = new bootstrap.Modal(document.getElementById('errorModal'));
             modal.show();
-        }
+}
+
+
+            // Django CSRF helper
+            function getCSRFToken() {
+                return document.cookie
+                    .split('; ')
+                    .find(row => row.startsWith('csrftoken='))
+                    ?.split('=')[1];
+            }
+
 
     
         document.getElementById('vrn').addEventListener('input', function() {
@@ -269,6 +372,11 @@
 
         async function searchMOT(event) {
             event.preventDefault();
+
+            const loginNotice = document.getElementById('login-notice');
+            if (loginNotice) {
+                loginNotice.style.display = 'none';
+            }
             
              
             const vrn = document.getElementById('vrn').value.trim();
@@ -295,6 +403,17 @@
                     } else {
                         displayVehicleDetails(data.vehicleDetails);
                         displayMOTDetails(data.motRecords);
+                        const addBtn = document.getElementById('add-vehicle-btn');
+                        if (addBtn) {
+                            addBtn.classList.remove('d-none');
+                        }
+
+
+                        const loginNotice = document.getElementById('login-notice');
+                        if (loginNotice) {
+                            loginNotice.style.display = 'block';
+                        }
+
 
                     // Prepare vehicle details for PDF generation
                     const vehicleDetails = {
@@ -326,6 +445,10 @@
                     MOT test reports and history are only available for vehicles that are more than 3 years old from the date of their first registration
                     </div>
                 `;
+                const addBtn = document.getElementById('add-vehicle-btn');
+                if (addBtn) {
+                    addBtn.classList.remove('d-none');
+                }
                 document.querySelector('.show-all-checkbox label').style.display = 'none';
             }
         }
@@ -378,14 +501,19 @@
             let reportHtml = '';
             
             data.forEach((record, index) => {
-                const isCollapsed = !document.getElementById('show-all').checked && index !== 0 ? 'display: none;' : '';
+               const isOpenByDefault = index === 0 || document.getElementById('show-all').checked;
+
+                const contentStyle = isOpenByDefault ? 'display: block;' : 'display: none;';
+                const iconClass = isOpenByDefault ? 'bi-chevron-up' : 'bi-chevron-down';
                 const testResultClass = record.testResult.toUpperCase() === 'PASSED' ? 'pass' : 'fail';
                 
                 reportHtml += `<div class="mot-block">
                     <button class="collapsible"> ${record.motTestNumber || 'N/A'}
-                        <a class="search-link" href="#vrn"><i class="bi bi-chevron-up"></i></a>
+                        <span class="chevron">
+                            <i class="bi ${iconClass}"></i>
+                        </span>
                     </button>
-                    <div class="content" style="${isCollapsed}">
+                    <div class="content" style="${contentStyle}">
                         <table>
                             <tbody>
                                 <tr>
@@ -418,22 +546,26 @@
                 </div>`;
             });
             container.innerHTML = reportHtml;
-
+            initCollapsibles();
+    
             // Initialize collapsible buttons
-            const collapsibles = document.querySelectorAll(".collapsible");
+           
+            
+    
+            function initCollapsibles() {
+                document.querySelectorAll(".collapsible").forEach(button => {
+                    button.addEventListener("click", function () {
+                        const content = this.nextElementSibling;
+                        const icon = this.querySelector(".chevron i");
 
-            collapsibles.forEach(button => {
-                button.addEventListener("click", function () {
-                    this.classList.toggle("active");
+                        const isOpen = content.style.display === "block";
 
-                    const content = this.nextElementSibling;
-                    if (content.style.display === "block") {
-                        content.style.display = "none";
-                    } else {
-                        content.style.display = "block";
-                    }
+                        content.style.display = isOpen ? "none" : "block";
+                        icon.classList.toggle("bi-chevron-up", !isOpen);
+                        icon.classList.toggle("bi-chevron-down", isOpen);
+                    });
                 });
-            });
+            }
         }
 
         async function generatePDF() {
@@ -489,12 +621,13 @@
 
         function toggleAllMOTResults() {
             const showAll = document.getElementById('show-all').checked;
-            const motBlocks = document.querySelectorAll('#mot-report .mot-block');
-            motBlocks.forEach(block => {
+            document.querySelectorAll('.mot-block').forEach(block => {
                 const content = block.querySelector('.content');
-                if (content) {
-                    content.style.display = showAll ? 'block' : 'none';
-                }
+                const icon = block.querySelector('.chevron i');
+
+                content.style.display = showAll ? 'block' : 'none';
+                icon.classList.toggle('bi-chevron-up', showAll);
+                icon.classList.toggle('bi-chevron-down', !showAll);
             });
             
 
@@ -512,6 +645,14 @@
             document.getElementById('mot-report').innerHTML = '';
             document.getElementById('show-all').checked = false;
             document.getElementById('pdf-button').style.display = 'none';
+            const loginNotice = document.getElementById('login-notice');
+            if (loginNotice) {
+                loginNotice.style.display = 'none';
+            }
+            const addBtn = document.getElementById('add-vehicle-btn');
+            if (addBtn) {
+                addBtn.classList.add('d-none');
+            }
         });
 
         document.querySelector('.search-link').addEventListener('click', function(event) {
@@ -527,6 +668,52 @@
             checkbox.style.display = 'inline-block'; // Show the checkbox
             checkbox.disabled = false; // Enable the checkbox
         });
+
+        function openAddVehicleModal() {
+            const vrn = document.getElementById('vrn').value.trim();
+            document.getElementById('confirm-vrn').innerText = vrn;
+
+            const modal = new bootstrap.Modal(
+                document.getElementById('addVehicleModal')
+            );
+            modal.show();
+        }
+
+        async function confirmAddVehicle() {
+            const vrn = document.getElementById('vrn').value.trim();
+
+            try {
+                const response = await fetch('/add-vehicle/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify({ vrn })
+                });
+
+                const data = await response.json();
+
+                bootstrap.Modal.getInstance(
+                    document.getElementById('addVehicleModal')
+                ).hide();
+
+                if (response.status === 201) {
+                    showErrorModal(data.message,'success'); // reuse success modal
+                } 
+                else if (response.status === 409) {
+                    showErrorModal('Vehicle already added.');
+                }
+                else {
+                    showErrorModal(data.error || 'Failed to add vehicle.');
+                }
+
+            } catch (error) {
+                showErrorModal('Service unavailable. Please try again.');
+            }
+        }
+
+
     </script>
 </body>
 </html>
