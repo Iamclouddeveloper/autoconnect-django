@@ -679,6 +679,10 @@
   .site-logo{
       height: 40px;
     }
+
+  .sidebar-logo {
+    display: none !important;
+  }
   .container-maincontent {
     padding: 10px; 
     max-width: 100%; 
@@ -952,6 +956,9 @@ input[type="password"]::-webkit-inner-spin-button {
   background: #fff;
   border-right: 1px solid #ddd;
 }
+.mobile-navbar{
+  z-index: 1060;
+}
 
 /* COLLAPSED DESKTOP */
 .sidebar.collapsed {
@@ -1023,6 +1030,15 @@ input[type="password"]::-webkit-inner-spin-button {
   display: none;
 }
 
+.sidebar.collapsed .sidebar-logo {
+    display: none !important;
+  }
+
+  .sidebar:not(.collapsed) .sidebar-logo {
+    display: flex !important;
+  }
+
+
 .nav-items a.active {
   color: #3a5f7d;
   font-weight: 600;
@@ -1039,7 +1055,7 @@ input[type="password"]::-webkit-inner-spin-button {
 }
 
 /* HAMBURGER */
-.sidebar-toggler {
+.sidebar-toggler  {
   border: none;
   background: none;
   padding: 0;
@@ -1050,6 +1066,15 @@ input[type="password"]::-webkit-inner-spin-button {
   top: 15px;
   left: 15px;
 }
+
+.sidebar-toggler-mobile{
+  border: none;
+  background: none;
+  position: relative;
+  z-index: 1061; /* higher than overlay (1040) */
+}
+
+
 
 .sidebar-toggler-icon {
   width: 24px;
@@ -1075,14 +1100,14 @@ input[type="password"]::-webkit-inner-spin-button {
 .sidebar-toggler-icon::after { top: 8px; }
 
 /* OPEN → X */
-.sidebar-toggler.open .sidebar-toggler-icon {
+.sidebar-toggler.open .sidebar-toggler-icon, .sidebar-toggler-mobile.open .sidebar-toggler-icon {
   background: transparent;
 }
-.sidebar-toggler.open .sidebar-toggler-icon::before {
+.sidebar-toggler.open .sidebar-toggler-icon::before, .sidebar-toggler-mobile.open .sidebar-toggler-icon::before {
   transform: rotate(45deg);
   top: 0;
 }
-.sidebar-toggler.open .sidebar-toggler-icon::after {
+.sidebar-toggler.open .sidebar-toggler-icon::after, .sidebar-toggler-mobile.open .sidebar-toggler-icon::after {
   transform: rotate(-45deg);
   top: 0;
 }

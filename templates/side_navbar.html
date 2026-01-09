@@ -13,64 +13,49 @@
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
 
+
 </head>
 <body>
 
-   {% if messages %}
-        <div class="container mt-3">
-            {% for message in messages %}
-            <div class="alert alert-light shadow-sm border-0 rounded-3 d-flex align-items-center justify-content-between flash-message flash-{{ message.tags }}">
-                
-                <div class="d-flex align-items-center">
-                
-                <!-- ICON -->
-                {% if message.tags == 'error' %}
-                    <div class="bg-danger-subtle text-danger rounded-circle d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;">
-                    <i class="fa fa-exclamation"></i>
-                    </div>
-                {% elif message.tags == 'success' %}
-                    <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;">
-                    <i class="fa fa-check"></i>
-                    </div>
-                {% elif message.tags == 'warning' %}
-                    <div class="bg-warning-subtle text-warning rounded-circle d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;">
-                    <i class="fa fa-triangle-exclamation"></i>
-                    </div>
-                {% else %}
-                    <div class="bg-info-subtle text-info rounded-circle d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;">
-                    <i class="fa fa-info"></i>
-                    </div>
-                {% endif %}
+   
 
-                <!-- TEXT -->
-                <div class="fw-semibold text-secondary">
-                    {{ message }}
-                </div>
-                </div>
 
-                <!-- CLOSE BUTTON -->
-                <button type="button" class="btn-close ms-3 close-flash"></button>
+<!-- MOBILE TOP NAVBAR -->
+<nav class="navbar navbar-light bg-white border-bottom d-md-none mobile-navbar ">
+  <div class="container-fluid d-flex align-items-center justify-content-between ">
+    
+    <!-- LOGO -->
+    <a class="navbar-brand d-flex align-items-center" href="#">
+      <img src="{% static 'images/logo.png' %}" alt="Logo" height="40">
+    </a>
 
-            </div>
-            {% endfor %}
-        </div>
-    {% endif %}
+    <!-- HAMBURGER -->
+    <button class="sidebar-toggler-mobile" id="sidebarToggleMobile">
+      <span class="sidebar-toggler-icon"></span>
+    </button>
 
-<!-- HAMBURGER -->
-<button class="sidebar-toggler" id="sidebarToggle">
+  </div>
+</nav>
+
+
+<button class="sidebar-toggler d-none d-md-block" id="sidebarToggle">
   <span class="sidebar-toggler-icon"></span>
 </button>
 
 <div class="d-flex">
 
   <!-- SIDEBAR -->
-  <aside id="sidebar" class="sidebar bg-white border-end collapsed">
-    
+  <aside id="sidebar" class="sidebar mt-5 mt-md-0 mt-lg-0 bg-white border-end collapsed">
 
     
-
+    
     <!-- Dashboard -->
     <div class="nav-section mt-5">
+      <div class="sidebar-logo d-none d-md-flex align-items-center mb-md-3 py-3">
+        <a href="{% url 'index' %}" class="d-flex align-items-center text-decoration-none">
+          <img src="{% static 'images/logo.png' %}" alt="Logo" height="40">
+        </a>
+      </div>
       <div class="nav-title">
         <span class="bi bi-house  nav-icon"></span>
         <span class="nav-text">Dashboard</span>
@@ -151,73 +136,131 @@
 
   </aside>
 
+
+
  
 
 </div>
+
+{% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+            <div class="alert alert-light shadow-sm border-0 rounded-3 d-flex align-items-center justify-content-between flash-message flash-{{ message.tags }}">
+                
+                <div class="d-flex align-items-center">
+                
+                <!-- ICON -->
+                {% if message.tags == 'error' %}
+                    <div class="bg-danger-subtle text-danger rounded-circle d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;">
+                    <i class="fa fa-exclamation"></i>
+                    </div>
+                {% elif message.tags == 'success' %}
+                    <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;">
+                    <i class="fa fa-check"></i>
+                    </div>
+                {% elif message.tags == 'warning' %}
+                    <div class="bg-warning-subtle text-warning rounded-circle d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;">
+                    <i class="fa fa-triangle-exclamation"></i>
+                    </div>
+                {% else %}
+                    <div class="bg-info-subtle text-info rounded-circle d-flex align-items-center justify-content-center me-3" style="width:36px;height:36px;">
+                    <i class="fa fa-info"></i>
+                    </div>
+                {% endif %}
+
+                <!-- TEXT -->
+                <div class="fw-semibold text-secondary">
+                    {{ message }}
+                </div>
+                </div>
+
+                <!-- CLOSE BUTTON -->
+                <button type="button" class="btn-close ms-3 close-flash"></button>
+
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
 
 <script src="{%  static 'js/script.js' %}"></script>
 <script src="{% static 'bootstrap/bootstrap.bundle.min.js' %}"></script>
 
 <script>
 const sidebar = document.getElementById('sidebar');
-const toggleBtn = document.getElementById('sidebarToggle');
+const desktopToggle = document.getElementById('sidebarToggle');
+const mobileToggle = document.getElementById('sidebarToggleMobile');
 
-function toggleSidebar() {
-  const isMobile = window.innerWidth <= 768;
-  toggleBtn.classList.toggle('open');
-
-  if (isMobile) {
-    sidebar.classList.toggle('show');
-    document.body.classList.toggle('overlay-active', sidebar.classList.contains('show'));
-  } else {
-    sidebar.classList.toggle('collapsed');
-  }
+/* ---------- HELPERS ---------- */
+function isMobile() {
+  return window.innerWidth <= 768;
 }
 
-toggleBtn.addEventListener('click', toggleSidebar);
+/* ---------- DESKTOP TOGGLE ---------- */
+desktopToggle.addEventListener('click', function (e) {
+  e.stopPropagation();
+  sidebar.classList.toggle('collapsed');
+  this.classList.toggle('open');
+});
 
-// Close sidebar on clicking outside (mobile)
-document.addEventListener('click', function(e) {
-  const isMobile = window.innerWidth <= 768;
-  if (isMobile && sidebar.classList.contains('show') && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+/* ---------- MOBILE TOGGLE ---------- */
+mobileToggle.addEventListener('click', function (e) {
+  e.stopPropagation();
+  sidebar.classList.toggle('show');
+
+  const isOpen = sidebar.classList.contains('show');
+
+  this.classList.toggle('open', isOpen);   
+
+  document.body.classList.toggle('overlay-active', isOpen);
+});
+
+
+/* ---------- CLOSE ON OUTSIDE CLICK (MOBILE) ---------- */
+document.addEventListener('click', function (e) {
+  if (
+    isMobile() &&
+    sidebar.classList.contains('show') &&
+    !sidebar.contains(e.target) &&
+    !mobileToggle.contains(e.target)
+  ) {
     sidebar.classList.remove('show');
-    toggleBtn.classList.remove('open');
+    document.body.classList.remove('overlay-active');
+    mobileToggle.classList.remove('open');
+  }
+});
+
+/* ---------- RESET ON RESIZE ---------- */
+window.addEventListener('resize', function () {
+  if (!isMobile()) {
+    sidebar.classList.remove('show');
     document.body.classList.remove('overlay-active');
   }
 });
 
-
-window.addEventListener('resize', function() {
-  if (window.innerWidth > 768) {
-    sidebar.classList.remove('show');
-    document.body.classList.remove('overlay-active');
-  }
-});
-
-document.querySelectorAll('.nav-title').forEach(function (title) {
+/* ---------- AUTO EXPAND ON SECTION CLICK (DESKTOP) ---------- */
+document.querySelectorAll('.nav-title').forEach(title => {
   title.addEventListener('click', function () {
-    const isDesktop = window.innerWidth > 768;
-
-    if (isDesktop && sidebar.classList.contains('collapsed')) {
+    if (!isMobile() && sidebar.classList.contains('collapsed')) {
       sidebar.classList.remove('collapsed');
-      toggleBtn.classList.add('open');
+      desktopToggle.classList.add('open');
     }
   });
 });
 
-setTimeout(function () {
-  document.querySelectorAll('.flash-message').forEach(function (message) {
-    message.classList.add('fade');
-      setTimeout(() => message.remove(), 300);
-    });
+/* ---------- FLASH MESSAGE AUTO CLOSE ---------- */
+setTimeout(() => {
+  document.querySelectorAll('.flash-message').forEach(msg => {
+    msg.classList.add('fade');
+    setTimeout(() => msg.remove(), 300);
+  });
 }, 10000);
 
- // Manual close
- document.querySelectorAll('.close-flash').forEach(function (btn) {
-     btn.addEventListener('click', function () {
-     this.closest('.flash-message').remove();
-     });
- });
+document.querySelectorAll('.close-flash').forEach(btn => {
+  btn.addEventListener('click', function () {
+    this.closest('.flash-message').remove();
+  });
+});
 </script>
 
 </body>

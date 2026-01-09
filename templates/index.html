@@ -328,8 +328,14 @@ section[id] {
                 <a href="#contact" class="btn btn-primary btn-lg">Get Started</a>
             </div>
             <div class="col-lg-5 text-center" data-animate="zoom-in">
-                <img src="{% static 'images/hero-car-4.jpg'%}" alt="Dashboard Illustration" class="img-fluid mt-4 mt-lg-0 rounded-4 shadow-lg">
+              <img
+                id="hero-image"
+                src="{% static 'images/hero-car3.jpg' %}"
+                alt="Hero"
+                class="img-fluid mt-4 mt-lg-0 rounded-4 shadow-lg hero-img">
             </div>
+
+
         </div>
     </div>
 </section>
@@ -822,6 +828,29 @@ function reloadCaptcha() {
   const img = document.getElementById("captchaImage");
   img.src = "{% url 'captcha_image' %}?t=" + new Date().getTime();
 }
+
+const heroImage = document.getElementById("hero-image");
+
+const imagePaths = [
+  "{% static 'images/hero-car3.jpg' %}",
+  "{% static 'images/hero-car-4.jpg' %}",
+  "{% static 'images/hero-car2.jpg' %}"
+];
+
+
+
+
+let currentIndex = 0;
+
+setInterval(() => {
+  
+
+  setTimeout(() => {
+    currentIndex = (currentIndex + 1) % imagePaths.length;
+    heroImage.src = imagePaths[currentIndex];
+  }, 300);
+
+}, 3000);
 
 </script>
 
