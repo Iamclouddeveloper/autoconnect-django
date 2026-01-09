@@ -26,7 +26,10 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from .models import Vehicle
 from django.core.mail import EmailMultiAlternatives
-import random
+import random, io
+
+from PIL import Image, ImageDraw, ImageFont
+from django.views.decorators.http import require_GET
 
 
  
@@ -34,13 +37,50 @@ import random
 User = get_user_model()
 
 
+@require_GET
+def captcha_image(request):
+    a = random.randint(1, 9)
+    b = random.randint(1, 9)
+
+    request.session["captcha"] = a + b
+    captcha_text = f"{a} + {b} = ?"
+    
+
+    img = Image.new("RGB", (180, 60), "black")
+    draw = ImageDraw.Draw(img)
+    #DejaVuSans-Bold,  arial
+    try:
+        font = ImageFont.truetype("DejaVuSans-Bold.ttf", 32)
+    except:
+        font = ImageFont.load_default()
+
+    draw.text((20, 12), captcha_text, fill="white", font=font)
+
+    # Noise
+    for _ in range(200):
+        draw.point(
+            (random.randint(0, 179), random.randint(0, 59)),
+            fill="white"
+        )
+
+    for _ in range(6):
+        draw.line(
+            (
+                random.randint(0, 180), random.randint(0, 60),
+                random.randint(0, 180), random.randint(0, 60)
+            ),
+            fill="white",
+            width=1
+        )
+
+    buffer = io.BytesIO()
+    img.save(buffer, "PNG")
+    buffer.seek(0)
+
+    return HttpResponse(buffer.getvalue(), content_type="image/png")
+
 def index(request):
-    # ---------- CAPTCHA GENERATION ----------
-    if "captcha" not in request.session:
-        a = random.randint(1, 9)
-        b = random.randint(1, 9)
-        request.session["captcha"] = a + b
-        request.session["captcha_q"] = f"{a} + {b}"
+    
 
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
@@ -48,19 +88,21 @@ def index(request):
         company = request.POST.get("company", "").strip()
         message_text = request.POST.get("message", "").strip()
         captcha_answer = request.POST.get("captcha_answer")
+        
 
         
         if not name or not email or not message_text:
             messages.error(request, "All required fields must be filled.")
             return redirect("index")
 
-        if not captcha_answer or int(captcha_answer) != request.session.get("captcha"):
+        correct_captcha = request.session.get("captcha")
+
+        if not captcha_answer or str(captcha_answer) != str(correct_captcha):
             messages.error(request, "Incorrect security answer.")
             return redirect("index")
 
         # CAPTCHA passed → remove it
         request.session.pop("captcha", None)
-        request.session.pop("captcha_q", None)
 
         # ---------- EMAIL TO ADMIN ----------
         admin_html = render_to_string('contact_email.html', {

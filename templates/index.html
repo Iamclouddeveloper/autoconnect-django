@@ -530,10 +530,27 @@ section[id] {
               <!-- CAPTCHA -->
               <div class="col-12">
                 <label class="form-label">Security Check</label>
-                <div class="d-flex gap-2">
-                  <input type="text" class="form-control" value="sum of {{ captcha_question }}" disabled>
-                  <input type="number" name="captcha_answer" id="captcha" class="form-control" placeholder="Answer" required>
+
+                <div class="d-flex align-items-center gap-2">
+                  <img src="{% url 'captcha_image' %}"
+                      alt="captcha"
+                      id="captchaImage"
+                      class="border rounded"
+                      style="cursor:pointer;width:120px;height:40px;"
+                      onclick="reloadCaptcha();">
+
+                  <input type="number"
+                        name="captcha_answer"
+                        id="captcha"
+                        class="form-control"
+                        placeholder="Enter answer"
+                        required>
                 </div>
+
+                <small class="text-muted d-block mt-1">
+                  Click the image to refresh
+                </small>
+
                 <small class="text-danger d-none" id="captchaError"></small>
               </div>
 
@@ -799,6 +816,12 @@ document.addEventListener("DOMContentLoaded", function () {
         flashModal.show();
     }
 });
+
+
+function reloadCaptcha() {
+  const img = document.getElementById("captchaImage");
+  img.src = "{% url 'captcha_image' %}?t=" + new Date().getTime();
+}
 
 </script>
 

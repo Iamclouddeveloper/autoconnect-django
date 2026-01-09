@@ -20,7 +20,8 @@ from .views import (
     add_vehicle,
     my_vehicle,
     delete_vehicle,
-    verify_email_change
+    verify_email_change,
+    captcha_image
     
     
     
@@ -58,8 +59,8 @@ urlpatterns = [
     path(
     'verify-email-change/<uidb64>/<token>/',verify_email_change,
     name='verify_email_change'
-),
-
+   ),
+    path("captcha-image/", captcha_image, name="captcha_image"),
 
      
 ]
