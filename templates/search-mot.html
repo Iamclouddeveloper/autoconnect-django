@@ -162,10 +162,83 @@
                 width: calc(100% - 16px); 
             }
           }
+
+        .scene {
+            position: fixed;
+            inset: 0;
+            perspective: 1400px;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .cube-field {
+            position: absolute;
+            width: 220%;
+            height: 220%;
+            left: -60%;
+            top: -60%;
+            display: grid;
+            grid-template-columns: repeat(16, 130px);
+            grid-auto-rows: 130px;
+            gap: 10px;
+            transform-style: preserve-3d;
+            transform: rotateX(60deg) rotateZ(45deg);
+        }
+
+        .cube {
+            position: relative;
+            transform-style: preserve-3d;
+            animation: cube-float 18s ease-in-out infinite;
+        }
+
+        .cube::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 8px;
+            background: linear-gradient(
+                145deg,
+                rgba(255,255,255,0.9),
+                rgba(160,160,160,0.25)
+            );
+            transform: translateZ(22px);
+        }
+
+        .cube::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        @keyframes cube-float {
+            0%   { transform: translateY(0); }
+            50%  { transform: translateY(-16px); }
+            100% { transform: translateY(0); }
+        }
+
+
+        .container,
+        .card,
+        form {
+            position: relative;
+            z-index: 5;
+        }
     </style>
     
 </head>
 <body class="bg-primary" >
+
+    <div class="scene">
+  <div class="cube-field" data-depth="0.35">
+    <script>
+      for (let i = 0; i < 160; i++) {
+        document.write('<div class="cube"></div>');
+      }
+    </script>
+  </div>
+</div>
     <!-- Header navbar -->
     {% if request.user.is_authenticated %}
         {% include 'side_navbar.html' %}
@@ -245,7 +318,7 @@
 
 
     
-    <!-- Error Modal -->
+   
     <!-- Status / Error Modal -->
 <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -329,7 +402,7 @@
 
             const modal = new bootstrap.Modal(document.getElementById('errorModal'));
             modal.show();
-}
+        }
 
 
             // Django CSRF helper
@@ -713,6 +786,27 @@
             }
         }
 
+
+        document.addEventListener("mousemove", e => {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+
+        document.querySelectorAll("[data-depth]").forEach(el => {
+            const depth = el.dataset.depth;
+            const x = (e.clientX - cx) * depth / 80;
+            const y = (e.clientY - cy) * depth / 80;
+
+            if (el.classList.contains("cube-field")) {
+            el.style.transform =
+                `rotateX(60deg) rotateZ(45deg) translate(${x}px, ${y}px)`;
+            } else {
+            el.style.transform =
+                `translate(${x}px, ${y}px)`;
+            }
+        });
+        });
+    
+        
 
     </script>
 </body>
