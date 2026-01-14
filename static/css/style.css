@@ -761,15 +761,6 @@ p {
   margin-bottom: 20px;
 }
 
-/* List Styles */
-ul {
-  list-style-type: disc;
-  margin-left: 20px;
-}
-
-ul li {
-  margin-bottom: 10px;
-}
 
 /* Link Styles */
 a {
@@ -1264,3 +1255,35 @@ footer {
 
 
 
+
+
+
+
+
+
+.address-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    z-index: 2000;
+    background: #fff;
+    max-height: 220px;
+    overflow-y: auto;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.address-suggestions li {
+    cursor: pointer;
+    padding: 10px 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.address-suggestions li:last-child {
+    border-bottom: none;
+}
+
+.address-suggestions li:hover {
+    background-color: #f5f7fa;
+}

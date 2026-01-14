@@ -23,42 +23,11 @@
             vrnInput.addEventListener('input', clearTable);
         });
                 
-        function showErrorModal(message, type = 'error') {
-            const header = document.getElementById('errorModalHeader');
-            const title = document.getElementById('errorModalTitle');
-            const icon = document.getElementById('errorModalIcon');
-            const body = document.getElementById('errorModalMessage');
-            const button = document.getElementById('errorModalBtn');
-
-            header.classList.remove('bg-danger', 'bg-success');
-            button.classList.remove('btn-danger', 'btn-success');
-
-            if (type === 'success') {
-                header.classList.add('bg-success');
-                title.innerText = 'Success';
-                icon.className = 'bi bi-check-circle me-2';
-                button.classList.add('btn-success');
-            } else {
-                header.classList.add('bg-danger');
-                title.innerText = 'Error';
-                icon.className = 'bi bi-exclamation-circle me-2';
-                button.classList.add('btn-danger');
-            }
-
-            body.innerText = message;
-
+        function showErrorModal(message) {
+            document.getElementById('errorModalMessage').innerText = message;
             const modal = new bootstrap.Modal(document.getElementById('errorModal'));
             modal.show();
         }
-
-
-            // Django CSRF helper
-            function getCSRFToken() {
-                return document.cookie
-                    .split('; ')
-                    .find(row => row.startsWith('csrftoken='))
-                    ?.split('=')[1];
-            }
 
 
         async function searchVRN(event) {
@@ -95,11 +64,6 @@
                         const loginNotice = document.getElementById('login-notice');
                         if (loginNotice) {
                             loginNotice.style.display = 'block';
-                        }
-
-                        const addBtn = document.getElementById('add-vehicle-btn');
-                        if (addBtn) {
-                            addBtn.classList.remove('d-none');
                         }
 
                         const btn = document.getElementById('pdf-button'); 
@@ -158,11 +122,6 @@
             if (loginNotice) {
                 loginNotice.style.display = 'none';
             }
-
-            const addBtn = document.getElementById('add-vehicle-btn');
-            if (addBtn) {
-                addBtn.classList.add('d-none');
-            }
         }
 
         async function generatePDF() {
@@ -193,8 +152,8 @@
 
                 const disclaimerText = [
                     "Disclaimer: This report is generated using DVLA data based on the user supplied information and is deemed as valid as on the date and time.",
-                    "This report is published free of charge to the public by AutoNgx. We do not take any responsibility for any discrepancies or litigation raised through this report.",
-                    "AutoNgx is not liable for any damages or losses incurred through the use of this report. All data is provided as-is, and no warranties are implied. Any reliance on the information contained herein is at the user's own risk."
+                    "This report is published free of charge to the public by RENIX (UK) Limited. We do not take any responsibility for any discrepancies or litigation raised through this report.",
+                    "Renix (UK) Limited is not liable for any damages or losses incurred through the use of this report. All data is provided as-is, and no warranties are implied. Any reliance on the information contained herein is at the user's own risk."
                 ];
 
                 doc.setFontSize(10);
@@ -206,76 +165,6 @@
                 alert('No data to export.');
             }
         }
-
-
-
-
-
-
-        function openAddVehicleModal() {
-            const vrn = document.getElementById('vrn').value.trim();
-            document.getElementById('confirm-vrn').innerText = vrn;
-
-            const modal = new bootstrap.Modal(
-                document.getElementById('addVehicleModal')
-            );
-            modal.show();
-        }
-
-        async function confirmAddVehicle() {
-            const vrn = document.getElementById('vrn').value.trim();
-
-            try {
-                const response = await fetch('/add-vehicle/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCSRFToken()
-                    },
-                    body: JSON.stringify({ vrn })
-                });
-
-                const data = await response.json();
-
-                bootstrap.Modal.getInstance(
-                    document.getElementById('addVehicleModal')
-                ).hide();
-
-                if (response.status === 201) {
-                    showErrorModal(data.message,'success'); // reuse success modal
-                } 
-                else if (response.status === 409) {
-                    showErrorModal('Vehicle already added.');
-                }
-                else {
-                    showErrorModal(data.error || 'Failed to add vehicle.');
-                }
-
-            } catch (error) {
-                showErrorModal('Service unavailable. Please try again.');
-            }
-        }
-
-        document.addEventListener("mousemove", e => {
-        const cx = window.innerWidth / 2;
-        const cy = window.innerHeight / 2;
-
-        document.querySelectorAll("[data-depth]").forEach(el => {
-            const depth = el.dataset.depth;
-            const x = (e.clientX - cx) * depth / 80;
-            const y = (e.clientY - cy) * depth / 80;
-
-            if (el.classList.contains("cube-field")) {
-            el.style.transform =
-                `rotateX(60deg) rotateZ(45deg) translate(${x}px, ${y}px)`;
-            } else {
-            el.style.transform =
-                `translate(${x}px, ${y}px)`;
-            }
-        });
-        });
-    
-        
     </script>
     <style>
         /* Additional inline styles */
@@ -327,80 +216,9 @@
               width: 60%; 
             }
         }
-
-        .scene {
-            position: fixed;
-            inset: 0;
-            perspective: 1400px;
-            z-index: 0;
-            overflow: hidden;
-        }
-
-        .cube-field {
-            position: absolute;
-            width: 220%;
-            height: 220%;
-            left: -60%;
-            top: -60%;
-            display: grid;
-            grid-template-columns: repeat(16, 130px);
-            grid-auto-rows: 130px;
-            gap: 10px;
-            transform-style: preserve-3d;
-            transform: rotateX(60deg) rotateZ(45deg);
-        }
-
-        .cube {
-            position: relative;
-            transform-style: preserve-3d;
-            animation: cube-float 18s ease-in-out infinite;
-        }
-
-        .cube::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: 8px;
-            background: linear-gradient(
-                145deg,
-                rgba(255,255,255,0.9),
-                rgba(160,160,160,0.25)
-            );
-            transform: translateZ(22px);
-        }
-
-        .cube::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: 8px;
-            border: 1px solid rgba(0,0,0,0.05);
-        }
-
-        @keyframes cube-float {
-            0%   { transform: translateY(0); }
-            50%  { transform: translateY(-16px); }
-            100% { transform: translateY(0); }
-        }
-
-        .container,
-        .card,
-        form {
-            position: relative;
-            z-index: 5;
-        }
     </style>
 </head>
 <body class="bg-primary">
-    <div class="scene">
-    <div class="cube-field" data-depth="0.35">
-        <script>
-        for (let i = 0; i < 160; i++) {
-            document.write('<div class="cube"></div>');
-        }
-        </script>
-    </div>
-    </div>
     <!-- Header navbar -->
     {% if request.user.is_authenticated %}
         {% include 'side_navbar.html' %}
@@ -431,20 +249,10 @@
         <table id="vehicle-details">
             <!-- Vehicle details will be inserted here -->
         </table>
-        <div class="button-container my-2 d-flex gap-2 justify-content-center">
-            
-                <button id="pdf-button" class="button-primary d-none" onclick="generatePDF()">
-                    Export to PDF
-                </button>
-            
 
-            {% if request.user.is_authenticated %}
-                <button id="add-vehicle-btn" class="button-primary d-none" onclick="openAddVehicleModal()">
-                    Add Vehicle
-                </button>
-            {% endif %}
+        <div class="button-container">
+            <button id="pdf-button" class="button-primary d-none" onclick="generatePDF()">Export to PDF</button>
         </div>
-
 
         {% if not request.user.is_authenticated %}
         <div id="login-notice" class="notification-box" style="display:none; margin-top:15px;">
@@ -465,59 +273,27 @@
         </div>
     </section>
 
-        <!-- Status / Error Modal -->
-<div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0">
-
-      <div id="errorModalHeader" class="modal-header text-white">
-        <h5 class="modal-title">
-          <i id="errorModalIcon" class="me-2"></i>
-          <span id="errorModalTitle">Message</span>
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-
-      <div class="modal-body text-center">
-        <p id="errorModalMessage" class="mb-0 fw-semibold"></p>
-      </div>
-
-      <div class="modal-footer">
-        <button id="errorModalBtn" type="button" class="btn" data-bs-dismiss="modal">
-          OK
-        </button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-
-    <div class="modal fade" id="addVehicleModal" tabindex="-1">
+        <!-- Error Modal -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0">
-        <div class="modal-header bg-info text-white">
-            <h5 class="modal-title">Add Vehicle</h5>
+        <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title">
+            <i class="bi bi-exclamation-circle me-2"></i>Message
+            </h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-
-        <div class="modal-body ">
-            <p>
-            Do you want to add vehicle 
-            <strong id="confirm-vrn"></strong>
-            to your account?
-            </p>
+        <div class="modal-body text-center">
+            <p id="errorModalMessage" class="mb-0 fw-semibold"></p>
         </div>
-
         <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button class="btn btn-primary" onclick="confirmAddVehicle()">Confirm</button>
+            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+            OK
+            </button>
         </div>
         </div>
     </div>
     </div>
-
-
 
 </body>
 </html>

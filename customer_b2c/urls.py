@@ -20,10 +20,22 @@ from .views import (
     add_vehicle,
     my_vehicle,
     delete_vehicle,
+    captcha_image,
     verify_email_change,
-    captcha_image
-    
-    
+    google_map_dashboard,
+    start_trip,
+    end_trip,
+    search_vehicle_vrn,
+    search_addresses,
+    active_trip,
+    end_trip,
+    export_trips_excel,
+    delete_trip,
+    fleet_mileage_dashboard_demo,
+    fleet_mileage_dashboard,
+    vehicle_mileage_summary,
+    vehicle_list,
+    mileage_report_pdf,
     
 )
 
@@ -61,6 +73,34 @@ urlpatterns = [
     name='verify_email_change'
    ),
     path("captcha-image/", captcha_image, name="captcha_image"),
+   
+    path("google-map-dashboard", google_map_dashboard, name="google_map_dashboard"),
+    
+    path("start-trip/", start_trip),
+    path("end-trip/<int:trip_id>/", end_trip),
+    
+    path(
+        "search-vehicle-vrn/",
+        search_vehicle_vrn,
+        name="search_vehicle_vrn"
+    ),
+    path("search-addresses/", search_addresses),
+    path("active-trip/", active_trip, name="active_trip"),
+    path("end-trip/", end_trip, name="end_trip"),
+    path("trips/export/excel/", export_trips_excel, name="export_trips_excel"),
+    path("delete-trip/<int:trip_id>/", delete_trip, name="delete_trip"),
+    path("mileage-dashboard-demo/", fleet_mileage_dashboard_demo, name="fleet_mileage_dashboard_demo"),
+    path("mileage-dashboard/", fleet_mileage_dashboard, name="fleet_mileage_dashboard"),
+    path("api/vehicles/", vehicle_list),
+    path("api/mileage/", vehicle_mileage_summary),
+    path(
+        "mileage-report-pdf/",
+        mileage_report_pdf,
+        name="mileage_report_pdf"
+    ),
+
+
+
 
      
 ]

@@ -30,6 +30,7 @@ import random, io
 
 from PIL import Image, ImageDraw, ImageFont
 from django.views.decorators.http import require_GET
+from django.db.models.deletion import ProtectedError
 
 
  
@@ -1147,11 +1148,410 @@ def my_vehicle(request):
     return render(request, 'my-vehicle.html', {'vehicles': vehicles})
 
 
+
 @login_required
 def delete_vehicle(request, pk):
     vehicle = get_object_or_404(Vehicle, pk=pk, user=request.user)
-    vehicle.delete()
-    messages.success(request, "Vehicle deleted successfully")
+
+    try:
+        vehicle.delete()
+        messages.success(request, "Vehicle deleted successfully")
+    except ProtectedError:
+        messages.error(
+            request,
+            "This vehicle cannot be deleted because it is linked to existing trips."
+        )
+
     return redirect('my_vehicle')
 
 
+
+
+from .models import Trip
+from django.db.models import Sum
+from openpyxl import Workbook
+
+
+
+    
+@login_required
+def google_map_dashboard(request):
+    trips = Trip.objects.filter(
+        user=request.user
+    ).order_by("-created_at")
+
+    total = trips.filter(
+        actual_distance__isnull=False
+    ).aggregate(
+        total=Sum("actual_distance")
+    )["total"] or 0
+
+    return render(request, "map_dashboard_google.html", {
+        "trips": trips,
+        "total": round(total, 2),
+        "GOOGLE_MAPS_API_KEY": settings.GOOGLE_MAPS_API_KEY
+    })
+
+
+
+
+
+    
+    
+
+    
+
+
+@login_required
+@csrf_exempt
+def start_trip(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request"}, status=400)
+
+    vrn = request.POST.get("vrn", "").upper()
+    odometer_start = float(request.POST.get("odometer_start"))
+
+    vehicle = Vehicle.objects.filter(user=request.user, vrn=vrn).first()
+    if not vehicle:
+        return JsonResponse({"error": f"{vrn} is not registered. Please add the vehicle to continue."}, status=400)
+    
+    active_trip = Trip.objects.filter(user=request.user, is_active=True).first()
+    
+    if active_trip :
+        return JsonResponse({
+            "error": (
+               f"You already have an active trip for vehicle "
+                f"{active_trip.vehicle.vrn}. "
+                "Please end it before starting a new trip or remove that trip."
+            )
+        }, status=400)
+
+    last_trip = Trip.objects.filter(
+        vehicle=vehicle
+    ).order_by("-created_at").first()
+
+    if last_trip and last_trip.latest_reading:
+        if odometer_start < last_trip.latest_reading:
+            return JsonResponse({
+                "error": f"Odometer cannot be less than last reading ({last_trip.latest_reading})"
+            }, status=400)
+
+    trip = Trip.objects.create(
+        user=request.user,
+        vehicle=vehicle,
+        start=request.POST.get("start"),
+        end=request.POST.get("end"),
+        estimated_distance=request.POST.get("estimated_distance"),
+        duration_text=request.POST.get("duration"),
+        odometer_start=odometer_start,
+        is_active=True
+    )
+
+    return JsonResponse({
+        "trip_id": trip.id
+    })
+
+
+
+
+
+@login_required
+def search_vehicle_vrn(request):
+    vehicles = Vehicle.objects.filter(user=request.user)
+
+    data = []
+
+    for v in vehicles:
+        last_trip = (
+            Trip.objects
+            .filter(vehicle=v, odometer_end__isnull=False)
+            .order_by("-created_at")
+            .first()
+        )
+
+        data.append({
+            "vrn": v.vrn,
+            "last_odometer": last_trip.odometer_end if last_trip else ""
+        })
+
+    return JsonResponse(data, safe=False)
+
+
+@login_required
+def search_addresses(request):
+    q = request.GET.get("q", "").strip()
+
+    if len(q) < 3:
+        return JsonResponse([], safe=False)
+
+    # Get matching start & end addresses
+    start_addresses = Trip.objects.filter(
+        user=request.user,
+        start__icontains=q
+    ).values_list("start", flat=True)
+
+    end_addresses = Trip.objects.filter(
+        user=request.user,
+        end__icontains=q
+    ).values_list("end", flat=True)
+
+    # Merge + remove blanks + deduplicate
+    addresses = set()
+    for addr in list(start_addresses) + list(end_addresses):
+        if addr:
+            addresses.add(addr)
+
+    return JsonResponse(list(addresses)[:10], safe=False)
+
+
+
+
+
+@login_required
+@csrf_exempt
+def end_trip(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request"}, status=400)
+
+    trip_id = request.POST.get("trip_id")
+    odometer_end_raw = request.POST.get("odometer_end")
+
+    if not trip_id:
+        return JsonResponse({"error": "Trip ID is required"}, status=400)
+
+    if not odometer_end_raw:
+        return JsonResponse({"error": "Odometer end reading is required"}, status=400)
+
+    # Get the trip by ID and ensure it belongs to the current user and is active
+    try:
+        trip = Trip.objects.get(id=trip_id, vehicle__user=request.user, is_active=True)
+    except Trip.DoesNotExist:
+        return JsonResponse({"error": "Active trip not found"}, status=400)
+
+    # Validate odometer value
+    try:
+        odometer_end = float(odometer_end_raw)
+    except ValueError:
+        return JsonResponse({"error": "Invalid odometer value"}, status=400)
+
+    if odometer_end <= trip.odometer_start:
+        return JsonResponse({
+            "error": f"Odometer end must be greater than start reading ({trip.odometer_start})"
+        }, status=400)
+
+    # Calculate actual distance
+    actual_distance = odometer_end - trip.odometer_start
+
+    # Update trip
+    trip.odometer_end = odometer_end
+    trip.actual_distance = round(actual_distance, 2)
+    trip.latest_reading = odometer_end
+    trip.is_active = False
+    trip.save()
+
+    return JsonResponse({
+        "message": "Trip ended successfully",
+        "actual_distance": trip.actual_distance
+    })
+   
+    
+@login_required
+def active_trip(request):
+    trip = (
+        Trip.objects
+        .filter(user=request.user, is_active=True)
+        .select_related("vehicle")
+        .first()
+    )
+
+    if not trip:
+        return JsonResponse({
+            "trip_id": None
+        })
+
+    return JsonResponse({
+        "trip_id": trip.id,
+        "vrn": trip.vehicle.vrn,
+        "start": trip.start,
+        "end": trip.end,
+        "odometer_start": trip.odometer_start,
+    })
+
+
+
+
+
+
+
+@login_required
+def export_trips_excel(request):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Trip History"
+
+    headers = [
+        "VRN", "Start", "Destination",
+        "Actual Distance", "Estimated Distance",
+        "Duration", "Odometer Start", "Odometer End",
+        "Created Date", "Status"
+    ]
+    ws.append(headers)
+
+    trips = Trip.objects.filter(user=request.user).select_related("vehicle")
+
+    for t in trips:
+        ws.append([
+            t.vehicle.vrn,
+            t.start,
+            t.end,
+            t.actual_distance or "Outstanding",
+            t.estimated_distance,
+            t.duration_text,
+            t.odometer_start,
+            t.odometer_end or "Outstanding",
+            t.created_at.strftime("%d %b %Y %I:%M %p"),
+            "Active" if t.is_active else "Completed",
+        ])
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="trip_history.xlsx"'
+    wb.save(response)
+    return response
+
+
+
+@login_required
+@require_POST
+def delete_trip(request, trip_id):
+    try:
+        trip = Trip.objects.get(
+            id=trip_id,
+            user=request.user
+        )
+        trip.delete()
+        return JsonResponse({"success": True})
+    except Trip.DoesNotExist:
+        return JsonResponse(
+            {"error": "Trip not found"},
+            status=404
+        )
+
+
+
+
+@login_required
+def fleet_mileage_dashboard_demo(request):
+    
+    return render(request, "fleet_mileage_dashboard_demo.html")
+
+
+
+@login_required
+def fleet_mileage_dashboard(request):
+    
+    return render(request, "fleet_mileage_dashboard.html")
+
+
+@login_required
+def vehicle_mileage_summary(request):
+    vehicle_id = request.GET.get("vehicle_id")
+    start = request.GET.get("start")
+    end = request.GET.get("end")
+
+    trips = Trip.objects.filter(
+        user=request.user,
+        vehicle_id=vehicle_id,
+        is_active=False,
+        actual_distance__isnull=False
+    )
+
+    if start and end:
+        trips = trips.filter(
+            created_at__date__range=[start, end]
+        )
+
+    miles = trips.aggregate(
+        total=Sum("actual_distance")
+    )["total"] or 0
+
+    return JsonResponse({
+        "miles": round(miles, 2)
+    })
+
+    
+    
+@login_required
+def vehicle_list(request):
+    vehicles = Vehicle.objects.filter(user=request.user, is_active=True)
+    return JsonResponse({
+        "vehicles": [
+            {
+                "id": v.id,
+                "label": f"{v.vrn} ({v.make} {v.model})"
+            } for v in vehicles
+        ]
+    })
+    
+    
+    
+def hmrc_allowance(miles):
+    if miles <= 10000:
+        return miles * 0.45
+    return (10000 * 0.45) + ((miles - 10000) * 0.25)
+
+
+
+@login_required
+def mileage_report_pdf(request):
+    vehicle_id = request.GET.get("vehicle_id")
+    start = request.GET.get("start")
+    end = request.GET.get("end")
+    mode = request.GET.get("mode", "summary")  # summary | detailed
+
+    trips = Trip.objects.filter(
+        user=request.user,
+        vehicle_id=vehicle_id,
+        is_active=False,
+        actual_distance__isnull=False,
+        created_at__date__range=[start, end]
+    ).order_by("created_at")
+    vehicle = Vehicle.objects.filter(id=vehicle_id, user=request.user).first()
+
+    total_miles = trips.aggregate(
+        total=Sum("actual_distance")
+    )["total"] or 0
+
+    allowance = hmrc_allowance(total_miles)
+
+    context = {
+        "user": request.user,
+        "start": start,
+        "end": end,
+        "mode": mode,
+        "trips": trips,
+        "total_miles": total_miles,
+        "allowance": allowance,
+        "vehicle": vehicle,
+    }
+
+    html = render_to_string("mileage_report.html", context)
+
+    options = {
+        "page-size": "A4",
+        "margin-top": "25mm",
+        "margin-bottom": "15mm",
+        "margin-left": "10mm",
+        "margin-right": "10mm",
+        "encoding": "UTF-8",
+        "enable-local-file-access": None,
+    }
+
+    pdf = pdfkit.from_string(html, False, options=options, configuration=settings.PDFKIT_CONFIG,)
+
+    filename = "mileage_detailed.pdf" if mode == "detailed" else "mileage_summary.pdf"
+
+    response = HttpResponse(pdf, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response

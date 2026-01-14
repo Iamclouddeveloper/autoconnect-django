@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Trip Tracker Free Version</title>
+
+
+<style>
+#map {
+  height: 350px;
+}
+
+.trip-active {
+  
+  color: #fff;
+  border-left: 5px solid #F54927; 
+}
+
+.trip-active td {
+  background-color: #FEEBE7 !important;
+    vertical-align: middle;
+}
+
+
+.active-vrn {
+    color: #fff;
+    background-color: #F87C63;
+    padding: 2px 8px;
+    border-radius: 12px;
+    
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    animation: pulseActive 1.2s infinite;
+}
+
+@keyframes pulseActive {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.fleet-button {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fleet-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(37,99,235,0.3);
+}
+
+</style>
+
+</head>
+<body class="bg-light">
+  {% include 'side_navbar.html' %}
+
+
+  <div class="container my-4">
+
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card shadow-sm border-0" style="background: linear-gradient(135deg, #e0f2fe, #f8fafc);">
+            <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+
+              
+              <div class="d-flex align-items-center gap-3">
+                {% if request.user.profile_photo %}
+
+                                        <img src="{{ request.user.profile_photo.url }}"
+                                            class="rounded-circle shadow-sm"
+                                            width="48" height="48">
+                {% else %}
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                    style="width:48px;height:48px; background: linear-gradient(135deg, #4f46e5, #3b82f6);">
+                  <i class="bi bi-person-fill fs-4"></i>
+                </div>
+                {% endif %}
+
+                <div>
+                  <h6 class="mb-0 fw-semibold">
+                    Hello {{ request.user.get_full_name|default:request.user.username }} ,
+                  </h6>
+                  <div class="d-flex align-items-center text-muted small">
+                    <i class="bi bi-envelope-fill me-2"></i>
+                    <span>{{ request.user.email }}</span>
+                  </div>
+
+                </div>
+              </div>
+
+              
+              <span class="badge bg-success-subtle text-success">
+                <i class="bi bi-geo-alt-fill me-1"></i> Trip Tracker
+              </span>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+  <!-- TOP DASHBOARD -->
+  <div class="row g-4 align-items-stretch ">
+
+    <!-- LEFT PANEL -->
+    <div class="col-md-4 d-flex order-2 order-md-1">
+      <div class="card shadow-sm w-100 h-100">
+        <div class="card-body d-flex flex-column">
+
+          <div class="mb-3 position-relative">
+            <label class="form-label">Start</label>
+
+            <div class="input-group">
+              <input id="start" value="London" class="form-control" autocomplete="off">
+              <button class="btn btn-outline-primary" type="button" onclick="useLiveLocation()">
+                <i class="bi bi-geo-alt-fill"></i>
+              </button>
+             
+            </div>
+            
+
+             
+
+            <small class="text-muted">Click icon to use current location</small>
+           <ul id="startSuggestions" class="list-group address-suggestions d-none"></ul>
+          </div>
+          <small id="startError" class="text-danger d-none">
+              Start address is required
+            </small>
+
+
+          <div class="mb-3 position-relative">
+            <label class="form-label">Destination</label>
+            <input id="end" placeholder="Enter destination" class="form-control" autocomplete="off">
+            <ul id="endSuggestions" class="list-group address-suggestions d-none"></ul>
+          </div>
+
+          <small id="endError" class="text-danger d-none">
+            Destination address is required
+          </small>
+
+
+          <button class="fleet-button w-100 mb-3" onclick="getRoute()">
+            <i class="bi bi-map-fill me-2"></i>
+            Get Route
+          </button>
+          <small id="routeError" class="text-danger d-none">
+            Please click <b>Get Route</b> before starting the trip
+          </small>
+
+
+
+
+          <div class="mt-auto d-flex gap-2">
+            <button class="btn btn-success w-100" onclick="openStartTripModal()"> <i class="bi bi-play-circle-fill me-2"></i> Start Trip</button>
+            <button class="btn btn-danger w-100" onclick="openEndTripModal()"> <i class="bi bi-stop-circle-fill me-2"></i> End Trip</button>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="col-md-8 d-flex order-1 order-md-2">
+      <div class="card shadow-sm w-100 h-100">
+        <div class="card-body p-0 h-100">
+          <div id="map"></div>
+        </div>
+        <div class="card-footer fw-semibold" id="result">
+          Distance: -- | Duration: --
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM SECTION -->
+  <div class="row g-4 mt-1">
+
+    <!-- HISTORY -->
+    <div class="col-md-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="mb-0">Trip History</h5>
+
+            <div class="d-flex gap-2">
+              <a href="{% url 'export_trips_excel' %}"
+                class="fleet-button">
+                <i class="bi bi-file-earmark-excel"></i> Export to Excel
+              </a>
+            </div>
+          </div>
+
+
+
+          
+
+          <div class="table-responsive">
+            <table class="table table-striped align-middle">
+              <thead>
+                <tr>
+                   <th>VRN</th>
+                  <th>Start</th>
+                  <th>Destination</th>
+                  <th>Distance</th>
+                  <th>Current Duration</th>
+                  <th>Odometer</th>
+                  <th>Date / Time</th>
+                  <th>Action</th>
+                  
+                </tr>
+              </thead>
+              <tbody>
+                {% for t in trips %}
+                <tr class="{% if t.is_active %} trip-active{% endif %}">
+                  <td>
+                    
+                    {% if t.is_active %}
+                      <span class="active-vrn ms-2">
+                        <i class="bi bi-crosshair"></i>
+                       {{ t.vehicle.vrn|default:"—" }}
+                      </span>
+                      {% else %}
+                      {{ t.vehicle.vrn|default:"—" }}
+                    {% endif %}
+                  </td>
+                  <td>{{t.start}}</td>
+                  <td>{{t.end}}</td>
+                  <td>
+                    <div >
+                      Actual:
+                      <span class="text-success">
+                        {{ t.actual_distance|default:"Outstanding" }} mi
+                      </span>
+                    </div>
+
+                    <div class="text-muted small">
+                      Estimated:
+                      {{ t.estimated_distance|default:"—" }} mi
+                    </div>
+                  </td>
+
+                  <td>{{t.duration_text}}</td>
+                  <td>
+                    <div class="small">
+                      Start:
+                      <span>
+                        {{ t.odometer_start|default:"—" }}
+                      </span>
+                    </div>
+
+                    <div class="small">
+                      End:
+                      {% if t.odometer_end %}
+                        {{ t.odometer_end }}
+                      {% else %}
+                        <span class="fst-italic">Outstanding</span>
+                      {% endif %}
+                    </div>
+                  </td>
+
+                  <td>{{t.created_at}}</td>
+                  <td class=" text-nowrap">
+                    <button class="btn btn-sm btn-outline-primary"
+                      onclick="showRouteFromTable('{{ t.start }}','{{ t.end }}')">
+                      Show Route
+                    </button>
+                    <button
+                      class="btn btn-sm btn-outline-danger delete-trip-btn"
+                      data-trip-id="{{ t.id }}"
+                      data-bs-toggle="modal"
+                      data-bs-target="#confirmDeleteModal"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+   
+
+  </div>
+
+</div>
+
+
+
+<!-- START TRIP MODAL -->
+<div class="modal fade" id="startTripModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm Trip Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="mb-3">
+          <label class="form-label">Vehicle VRN Example : V777ELU</label>
+
+          <select id="modalVrn" class="form-select">
+            <option value="">-- Select Vehicle --</option>
+          </select>
+        </div>
+
+
+        
+
+        <div class="mb-3">
+          <label class="form-label">Odometer Start</label>
+          <input type="number" id="modalOdometerStart" class="form-control" placeholder="12540" min="2">
+        </div>
+
+        <button class="button-primary w-100 mt-2"
+              onclick="location.href='{% url 'add_vehicle' %}'">
+          <i class="bi bi-plus-circle"></i> Add Vehicle
+       </button>
+
+
+        <div class="alert alert-danger d-none mt-3" id="startTripError"></div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-success" onclick="confirmStartTrip()">Confirm & Start</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<div class="modal fade" id="endTripModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">End Trip</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="mb-3">
+          <label class="form-label">Vehicle VRN</label>
+          <select id="endTripVrn" class="form-select"></select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Odometer End</label>
+          <input type="number" id="endOdometer" class="form-control">
+        </div>
+
+        <div class="alert alert-danger d-none" id="endTripError"></div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-danger" onclick="confirmEndTrip()">End Trip</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0 rounded-4">
+
+      <div class="modal-header border-0 pb-0">
+        <div class="d-flex align-items-center">
+          <div class="bg-danger-subtle text-danger rounded-circle d-flex align-items-center justify-content-center me-2"
+               style="width:36px;height:36px;">
+            <i class="bi bi-exclamation"></i>
+          </div>
+          <h5 class="modal-title fw-semibold">Confirm Delete</h5>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p id="deleteCount" class="fw-medium mb-1">
+          Are you sure you want to delete this trip?
+        </p>
+        <p class="text-muted small mb-0">
+          This action is permanent and cannot be undone.
+        </p>
+      </div>
+
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button id="confirmDelete" type="button" class="btn btn-danger">
+          Delete
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- GOOGLE MAPS -->
+<script>
+let map;
+let directionsService;
+let directionsRenderer;
+
+// --- TRACKING VARIABLES ---
+let currentRoutePath = []; // Stores LatLng along the route
+let tripInterval = null;
+let routeIndex = 0;
+let liveMarker = null;
+let activeTripId = null;
+
+
+let distancemiles = null;
+let durationText = null;
+
+
+let startTripModal;
+
+
+function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 51.505, lng: -0.09 },
+        zoom: 7
+    });
+
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
+}
+
+
+/* ================= START TRIP ================= */
+
+function showInputError(id, message) {
+    const el = document.getElementById(id);
+    el.textContent = message;
+    el.classList.remove("d-none");
+}
+
+function hideInputError(id) {
+    document.getElementById(id).classList.add("d-none");
+}
+
+function openStartTripModal() {
+
+    const startInput = document.getElementById("start");
+    const endInput = document.getElementById("end");
+
+    // Reset all errors
+    hideInputError("startError");
+    hideInputError("endError");
+    hideInputError("routeError");
+
+    
+    if (!startInput.value.trim()) {
+        showInputError("startError", "Start address is required");
+        startInput.focus();
+        return;
+    }
+
+    // Validate End
+    if (!endInput.value.trim()) {
+        showInputError("endError", "Destination address is required");
+        endInput.focus();
+        return;
+    }
+
+   
+    if (!currentRoutePath.length) {
+        showInputError(
+            "routeError",
+            "Please click Get Route before starting the trip"
+        );
+        return;
+    }
+
+    // Open modal
+    startTripModal = new bootstrap.Modal(
+        document.getElementById("startTripModal")
+    );
+
+    document.getElementById("modalVrn").value = "";
+    document.getElementById("modalOdometerStart").value = "";
+    document.getElementById("startTripError").classList.add("d-none");
+
+    loadVehicleVRNs();
+    startTripModal.show();
+}
+
+
+
+function confirmStartTrip() {
+
+    const vrn = document.getElementById("modalVrn").value.trim();
+    const odometerStart = document.getElementById("modalOdometerStart").value.trim();
+    const errorBox = document.getElementById("startTripError");
+
+    if (!vrn || !odometerStart) {
+        showError("VRN and Odometer Start are required");
+        return;
+    }
+
+    if (parseFloat(odometerStart) <= 1) {
+        showError("Odometer reading must be greater than 1");
+        return;
+    }
+
+    errorBox.classList.add("d-none");
+
+    let start = document.getElementById("start").value;
+    let end = document.getElementById("end").value;
+
+    fetch("/start-trip/", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+            start: start,
+            end: end,
+            estimated_distance: distancemiles,
+            duration: durationText,
+            odometer_start: odometerStart,
+            vrn: vrn
+        })
+    })
+    .then(async r => {
+        const data = await r.json();
+
+        if (!r.ok) {
+            
+            throw data.error || "Something went wrong";
+        }
+
+        
+        return data;
+    })
+    .then(d => {
+        activeTripId = d.trip_id;
+        startTripModal.hide();
+
+        document.getElementById("result").innerHTML = "Trip Started";
+         location.reload();
+    })
+    .catch(err => {
+        showError(err);
+    });
+}
+
+function showError(message) {
+    const errorBox = document.getElementById("startTripError");
+    errorBox.textContent = message;
+    errorBox.classList.remove("d-none");
+}
+
+
+
+function loadVehicleVRNs() {
+    fetch("/search-vehicle-vrn/")
+        .then(r => r.json())
+        .then(data => {
+            const select = document.getElementById("modalVrn");
+            const odoInput = document.getElementById("modalOdometerStart");
+
+            select.innerHTML = '<option value="">-- Select Vehicle --</option>';
+            odoInput.value = "";
+
+            data.forEach(item => {
+                const opt = document.createElement("option");
+                opt.value = item.vrn;
+                opt.textContent = item.vrn;
+                opt.dataset.lastOdo = item.last_odometer; // store last reading
+                select.appendChild(opt);
+            });
+
+            // when VRN changes
+            select.onchange = function () {
+                const selected = select.options[select.selectedIndex];
+                const lastOdo = selected.dataset.lastOdo;
+
+                if (lastOdo) {
+                    odoInput.value = lastOdo;
+                } else {
+                    odoInput.value = "";
+                }
+            };
+        });
+}
+
+
+
+/* ================= ROUTE ================= */
+function getRoute() {
+    let start = document.getElementById("start").value;
+    let end = document.getElementById("end").value;
+
+    directionsService.route({
+        origin: start,
+        destination: end,
+        travelMode: google.maps.TravelMode.DRIVING
+    }, function(result, status) {
+
+        if (status === "OK") {
+            directionsRenderer.setDirections(result);
+
+            // --- SAVE ROUTE PATH ---
+            currentRoutePath = [];
+            let steps = result.routes[0].legs[0].steps;
+            steps.forEach(step => {
+                step.path.forEach(p => currentRoutePath.push(p));
+            });
+
+            let leg = result.routes[0].legs[0];
+             distancemiles = (leg.distance.value * 0.000621371).toFixed(2);
+             durationText = leg.duration.text;
+
+            document.getElementById("result").innerHTML =
+                `Distance: ${distancemiles} miles | Duration: ${durationText}`;
+        }
+    });
+}
+
+
+/* ================= END TRIP ================= */
+function endTrip() {
+    if (tripInterval) {
+        clearInterval(tripInterval);
+        tripInterval = null;
+    }
+
+    if (activeTripId) {
+        fetch(`/end-trip/${activeTripId}/`);
+        activeTripId = null;
+    }
+
+    if (liveMarker) {
+        liveMarker.setMap(null);
+        liveMarker = null;
+    }
+
+    document.getElementById("result").innerHTML = "Trip Ended";
+}
+
+/* ================= HISTORY ROUTE ================= */
+function showRouteFromTable(start, end) {
+    directionsService.route({
+        origin: start,
+        destination: end,
+        travelMode: google.maps.TravelMode.DRIVING
+    }, function(result, status) {
+        if (status === "OK") {
+            directionsRenderer.setDirections(result);
+            let leg = result.routes[0].legs[0];
+            let distancemiles = (leg.distance.value * 0.000621371).toFixed(2);
+            let durationText = leg.duration.text;
+
+            document.getElementById("result").innerHTML =
+                `Distance: ${distancemiles} miles | Duration: ${durationText}`;
+        }
+    });
+}
+
+let liveLocationMarker = null;
+let geocoder = null;
+
+function useLiveLocation() {
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser.");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        position => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const latLng = { lat, lng };
+
+            // Initialize geocoder if not already
+            if (!geocoder) {
+                geocoder = new google.maps.Geocoder();
+            }
+
+            // Reverse geocode to get address
+            geocoder.geocode({ location: latLng }, (results, status) => {
+                if (status === "OK" && results[0]) {
+                    document.getElementById("start").value = results[0].formatted_address;
+                } else {
+                    document.getElementById("start").value = `${lat}, ${lng}`;
+                }
+            });
+
+            // Show on map
+            map.setCenter(latLng);
+            map.setZoom(15);
+
+            if (liveLocationMarker) {
+                liveLocationMarker.setMap(null);
+            }
+
+            liveLocationMarker = new google.maps.Marker({
+                position: latLng,
+                map: map,
+                icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png",
+                title: "Your Live Location"
+            });
+        },
+        error => {
+            alert("Unable to retrieve your location.");
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000
+        }
+    );
+}
+
+
+
+function initAddressAutocomplete(inputId, listId) {
+    const input = document.getElementById(inputId);
+    const list = document.getElementById(listId);
+
+    input.addEventListener("input", () => {
+        const q = input.value.trim();
+
+        if (q.length < 3) {
+            list.classList.add("d-none");
+            return;
+        }
+
+        fetch(`/search-addresses/?q=${encodeURIComponent(q)}`)
+            .then(r => r.json())
+            .then(data => {
+                list.innerHTML = "";
+
+                if (!data.length) {
+                    list.classList.add("d-none");
+                    return;
+                }
+
+                data.forEach(address => {
+                    const li = document.createElement("li");
+                    li.className = "list-group-item";
+                    li.textContent = address;
+
+                    li.onclick = () => {
+                        input.value = address;
+                        list.classList.add("d-none");
+                    };
+
+                    list.appendChild(li);
+                });
+
+                list.classList.remove("d-none");
+            });
+    });
+
+    document.addEventListener("click", e => {
+        if (!input.contains(e.target) && !list.contains(e.target)) {
+            list.classList.add("d-none");
+        }
+    });
+}
+
+initAddressAutocomplete("start", "startSuggestions");
+initAddressAutocomplete("end", "endSuggestions");
+
+
+
+function openEndTripModal() {
+    fetch("/active-trip/")
+        .then(r => r.json())
+        .then(data => {
+
+            if (!data.trip_id) {
+                alert("No active trip found");
+                return;
+            }
+
+            document.getElementById("endTripVrn").innerHTML = `
+                <option value="${data.trip_id}">
+                    ${data.vrn}
+                </option>
+            `;
+
+            document.getElementById("endOdometer").value = "";
+
+            new bootstrap.Modal(
+                document.getElementById("endTripModal")
+            ).show();
+        });
+}
+
+
+
+function confirmEndTrip() {
+    const tripId = document.getElementById("endTripVrn").value;
+    const odoEnd = document.getElementById("endOdometer").value;
+    const errorBox = document.getElementById("endTripError");
+
+    if (!tripId) {
+        errorBox.textContent = "Please select a vehicle";
+        errorBox.classList.remove("d-none");
+        return;
+    }
+
+    if (!odoEnd) {
+        errorBox.textContent = "Odometer end is required";
+        errorBox.classList.remove("d-none");
+        return;
+    }
+
+    fetch("/end-trip/", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+            trip_id: tripId,          
+            odometer_end: odoEnd
+        })
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.error) throw d.error;
+        location.reload();
+    })
+    .catch(err => {
+        errorBox.textContent = err;
+        errorBox.classList.remove("d-none");
+    });
+}
+
+
+
+let deleteTripId = null;
+
+
+document.querySelectorAll(".delete-trip-btn").forEach(btn => {
+  btn.addEventListener("click", function () {
+    deleteTripId = this.dataset.tripId;
+  });
+});
+
+//  confirm delete is clicked
+document.getElementById("confirmDelete").addEventListener("click", function () {
+  if (!deleteTripId) return;
+
+  fetch(`/delete-trip/${deleteTripId}/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": "{{ csrf_token }}"
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      location.reload(); 
+    } else {
+      alert(data.error || "Delete failed");
+    }
+  });
+});
+
+
+
+
+</script>
+
+
+
+
+<script
+  src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&callback=initMap"
+  async
+  defer>
+</script>
+
+</body>
+</html>

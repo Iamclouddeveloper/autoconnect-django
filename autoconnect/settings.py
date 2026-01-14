@@ -169,6 +169,9 @@ DVSA_API_KEY = os.getenv("MOT_API_KEY")
 VRN_API_KEY = os.getenv("VRN_API_KEY")
 
 
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+
 
 
 

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mileage Report</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        margin: 25mm 0 10mm 0;
+        padding: 0;
+    }
+
+    .container {
+        width: 210mm; /* A4 width */
+        margin: 0 auto;
+        padding: 20px;
+        background: #fff;
+        
+    }
+
+    h1 {
+        text-align: center;
+        font-size: 20px;
+        margin-bottom: 5px;
+    }
+
+    .report-meta {
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        page-break-inside: auto;
+        margin-top: 10px;
+    }
+    tr {
+        page-break-inside: avoid;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        font-size: 12px;
+    }
+
+    th {
+        background-color: #0056b3; /* Corporate Blue */
+        color: #fff;
+        text-align: left;
+    }
+
+    td {
+        background: #f4f4f4;
+    }
+
+    .summary-table td {
+        font-weight: bold;
+    }
+
+    .no-record {
+        text-align: center;
+        font-style: italic;
+        font-weight: 600;
+        color: #6b7280;
+        background: #f9fafb;
+    }
+
+
+    .right {
+        text-align: right;
+    }
+
+    .total-row td {
+        background: #e5e7eb;
+        font-weight: bold;
+    }
+
+    @page {
+        size: A4;
+        margin: 25mm 10mm;
+    }
+
+    .footer {
+        position: fixed;
+        bottom: 10mm;
+        width: 100%;
+        text-align: center;
+        font-size: 11px;
+        color: #666;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>Mileage Report {% if mode == "detailed" %}(Detailed){% else %}(Summary){% endif %}</h1>
+
+    <div class="report-meta">
+        Period: {{ start }} to {{ end }}
+    </div>
+
+    <!-- Summary -->
+    <table class="summary-table">
+        <tr>
+            <th>Vehicle (VRN)</th>
+            <th>Total Miles</th>
+            <th>HMRC Allowance</th>
+        </tr>
+        <tr>
+            <td>{{ vehicle.vrn|default:"N/A" }}</td>
+            <td>{{ total_miles|floatformat:2 }}</td>
+            <td>£{{ allowance|floatformat:2 }}</td>
+        </tr>
+    </table>
+
+    {% if mode == "summary" %}
+        <br>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th class="right">Odo Start</th>
+                    <th class="right">Odo End</th>
+                    <th class="right">Miles</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in trips %}
+                <tr>
+                    <td>{{ t.created_at|date:"d M Y" }}</td>
+                        <td>{{ t.start }}</td>
+                        <td>{{ t.end }}</td>
+                        <td class="right">{{ t.odometer_start|floatformat:1 }}</td>
+                        <td class="right">{{ t.odometer_end|floatformat:1 }}</td>
+                        <td class="right">{{ t.actual_distance|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="no-record">
+                        No record found
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if trips %}
+                <tr class="total-row">
+                    <td colspan="5" class="right">TOTAL</td>
+                    <td class="right">{{ total_miles|floatformat:2 }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    {% endif %}
+
+
+    {% if mode == "detailed" %}
+    <br>
+
+    <!-- Detailed Trips -->
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>From</th>
+                <th>To</th>
+                <th class="right">Odo Start</th>
+                <th class="right">Odo End</th>
+                <th class="right">Miles</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for t in trips %}
+            <tr>
+                <td>{{ t.created_at|date:"d M Y" }}</td>
+                <td>{{ t.start }}</td>
+                <td>{{ t.end }}</td>
+                <td class="right">{{ t.odometer_start|floatformat:1 }}</td>
+                <td class="right">{{ t.odometer_end|floatformat:1 }}</td>
+                <td class="right">{{ t.actual_distance|floatformat:2 }}</td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="6" class="no-record">
+                    No record found
+                </td>
+            </tr>
+        {% endfor %}
+        {% if trips %}
+            <tr class="total-row">
+                <td colspan="5" class="right">TOTAL</td>
+                <td class="right">{{ total_miles|floatformat:2 }}</td>
+            </tr>
+        {% endif %}
+        </tbody>
+    </table>
+    {% endif %}
+
+</div>
+
+<div class="footer">
+    Mileage report generated by AutoNgx
+</div>
+
+</body>
+</html>

@@ -1,4 +1,5 @@
 from django.conf import settings
+import uuid
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -109,6 +110,51 @@ class EmailQueue(models.Model):
     class Meta:
         db_table = 'email_queue'
         ordering = ['created_at']
+        
+        
+class Trip(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="trips"
+    )
+
+    vehicle = models.ForeignKey(
+        Vehicle,
+        on_delete=models.PROTECT,  
+        related_name="trips"
+    )
+
+    start = models.CharField(max_length=255)
+    end = models.CharField(max_length=255, blank=True)
+
+    estimated_distance  = models.FloatField(default=0,help_text="Estimated distance from map (miles)")
+    actual_distance = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Actual driven distance from odometer (miles)"
+    )
+    duration_text = models.CharField(max_length=100, blank=True)
+
+    odometer_start = models.FloatField()
+    odometer_end = models.FloatField(null=True, blank=True)
+
+    latest_reading = models.FloatField(null=True, blank=True)
+    is_active = models.BooleanField(default=False)
+
+    tracking_token = models.CharField(max_length=40, unique=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+
+    def save(self, *args, **kwargs):
+        if not self.tracking_token:
+            self.tracking_token = uuid.uuid4().hex
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.start}"
+
 
 class EXample(models.Model):
     temp_check = models.BooleanField(default=False)

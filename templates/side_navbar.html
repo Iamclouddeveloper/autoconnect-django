@@ -109,6 +109,36 @@
       </div>
     </div>
 
+
+    {% if request.user.is_authenticated %}
+
+    <div class="nav-section">
+      
+      <div class="nav-title">
+        <span class="bi bi-map-fill  nav-icon"></span>
+        <span class="nav-text">Map Tool</span>
+      </div>
+
+      <div class="nav-items">
+        <a href="{% url 'google_map_dashboard' %}"
+          class="{% if request.resolver_match.url_name == 'google_map_dashboard' %}active{% endif %}">
+          Trip Dashboard
+        </a>
+
+        <a href="{% url 'fleet_mileage_dashboard_demo' %}"
+          class="{% if request.resolver_match.url_name == 'fleet_mileage_dashboard_demo' %}active{% endif %}">
+          Fleet Mileage - demo
+        </a>
+
+        <a href="{% url 'fleet_mileage_dashboard' %}"
+          class="{% if request.resolver_match.url_name == 'fleet_mileage_dashboard' %}active{% endif %}">
+          Fleet Mileage Dashboard
+        </a>
+      </div>
+    </div>
+
+    {% endif %}
+
     {% if request.user.is_authenticated %}
     <div class="nav-section mt-auto">
       <div class="nav-title">
@@ -128,6 +158,8 @@
       </div>
     </div>
     {% endif %}
+
+    
 
 
 

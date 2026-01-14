@@ -1,0 +1,587 @@
+
+{%load static%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOT History Search</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        
+
+        form {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin: 10px 0;
+        }
+
+        #vrn {
+            padding: 8px;
+            font-size: 16px;
+        }
+
+        
+        
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%; /* Fixed width for table */
+            border-collapse: collapse;
+            margin-top: 20px;
+            table-layout: fixed;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        th, td {
+            border: 1px solid #ddd !important;
+            padding: 8px;
+        }
+
+        td:first-child {
+            font-weight: bold;
+            background-color: #f2f2f2;
+            width: 30%;
+        }
+
+        td:last-child {
+            width: 70%;
+        }
+
+        .mot-block {
+            margin-bottom: 20px; /* Spacing between MOT result tables */
+        }
+
+        .collapsible {
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: underline;
+            background:  var(--primary);
+            color: #fff;
+            border: none;
+            padding: 10px;
+            width: calc(100% - 20px); /* Adjust width for link alignment */
+            text-align: left;
+            border-radius: 5px; /* Curved border */
+            transition: background-color 0.3s;
+            position: relative; /* For positioning the link */
+        }
+
+        .collapsible:hover {
+            background-color: var(--accent);
+        }
+
+        .chevron {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+        }
+
+        .content {
+            display: none;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        .notes-header {
+            background-color: turquoise;
+            color: #fff;
+            text-align: left;
+            font-weight: bold;
+            padding: 10px;
+        }
+
+        .notes-content {
+            background-color: #fff;
+            padding: 10px;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .pass {
+            color: green;
+            font-weight: bold;
+        }
+
+        .fail {
+            color: red;
+            font-weight: bold;
+        }
+
+        .show-all-checkbox {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .show-all-checkbox label {
+            display: none; /* Hidden by default */
+        }
+
+        
+        .search-link {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            text-decoration: none;
+            color: #fff;
+            font-size: 14px;
+            border: none;
+            background: none;
+        }
+
+        .search-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            table {
+              width: 100%; 
+            }
+          
+            td:first-child {
+              width: 40%; 
+            }
+          
+            td:last-child {
+              width: 60%; 
+            }
+            .collapsible {
+                font-size: 14px; 
+                padding: 8px; 
+                width: calc(100% - 16px); 
+            }
+          }
+    </style>
+    
+</head>
+<body class="bg-primary" >
+    <!-- Header navbar -->
+    {% if request.user.is_authenticated %}
+        {% include 'side_navbar.html' %}
+    {% else %}
+        {% include 'navbar.html' %}
+    {% endif %}
+
+
+    <section data-animate="fade-in">
+        <div class="container my-5" >
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card p-4">
+        <h1 >MOT History Search</h1>
+
+        <form id="mot-form" onsubmit="searchMOT(event)"  class="form">
+            <div class="form-group">
+                <label for="vrn" style="text-align: start;">Enter VRN Example : V777ELU</label>
+                <input type="text" id="vrn" name="vrn" value="{{ vrn }}" required placeholder="Enter vehicle registration number (VRN)">
+            </div>
+            <div class="form-group">
+                <button type="submit" class="button-primary p-2 w-100">Search</button>
+            </div>
+        </form>
+
+        <div id="vehicle-details">
+            <!-- Vehicle details will be inserted here -->
+        </div>
+
+        <div class="show-all-checkbox">
+            <label>
+                <input type="checkbox" id="show-all" onchange="toggleAllMOTResults()">
+                Show All MOT Test Results
+            </label>
+        </div>
+        <div class="button-container my-2">
+            <button id="pdf-button" class="button-primary d-none" onclick="generatePDF()">Export to PDF</button>
+        </div>
+
+        <div id="mot-report">
+            <!-- MOT details will be inserted here -->
+        </div>
+
+        {% if not request.user.is_authenticated %}
+        <div id="login-notice" class="notification-box" style="display:none;">
+            <p>
+                 <strong>Get notified & save records!</strong><br>
+                Add your vehicles and VRNs to receive MOT & tax reminders,  
+                and access your full MOT history anytime.<br><br>
+
+                <a href="{% url 'register' %}" class="text-primary fw-bold">
+                    Create an account now
+                </a>
+                or
+                <a href="{% url 'login' %}" class="text-primary fw-bold">
+                    login
+                </a>
+                to unlock these features.
+            </p>
+        </div>
+        {% endif %}
+
+        </div>
+        </div>
+        </div>
+    </section>
+
+
+
+    
+    <!-- Error Modal -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+        <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title">
+            <i class="bi bi-exclamation-circle me-2"></i>Message
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+            <p id="errorModalMessage" class="mb-0 fw-semibold"></p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+            OK
+            </button>
+        </div>
+        </div>
+    </div>
+    </div>
+
+
+    
+
+    <script>
+        function showErrorModal(message) {
+            document.getElementById('errorModalMessage').innerText = message;
+            const modal = new bootstrap.Modal(document.getElementById('errorModal'));
+            modal.show();
+        }
+
+    
+        document.getElementById('vrn').addEventListener('input', function() {
+            this.value = this.value.trim().toUpperCase();
+            if (this.value === ''){
+                const checkboxLabel = document.querySelector('.show-all-checkbox label');
+                checkboxLabel.style.display = 'none';
+            }else{ 
+                const checkboxLabel = document.querySelector('.show-all-checkbox label');
+                checkboxLabel.style.display = this.value ? 'none' : 'block';
+            }
+        });
+
+
+        document.getElementById('vrn').addEventListener('blur', function() {
+            document.querySelector('.search-link').addEventListener('click', function(event) {
+                event.preventDefault();
+                const checkboxLabel = document.querySelector('.show-all-checkbox label');
+                checkboxLabel.style.display = 'block';
+            });
+        });
+
+        document.addEventListener('keydown', function() {
+            const checkboxLabel = document.querySelector('.show-all-checkbox label');
+            checkboxLabel.style.display = 'none';
+        });
+
+        
+    
+
+        async function searchMOT(event) {
+            event.preventDefault();
+
+            const loginNotice = document.getElementById('login-notice');
+            if (loginNotice) {
+                loginNotice.style.display = 'none';
+            }
+            
+             
+            const vrn = document.getElementById('vrn').value.trim();
+            if (!vrn) {
+                showErrorModal('Please enter a valid VRN.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/search-mot/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ vrn: vrn })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.error) {
+                        showErrorModal(data.error || 'VRN not found.');
+                        document.getElementById('pdf-button').style.display = 'none';
+                        document.querySelector('.show-all-checkbox label').style.display = 'none';
+                    } else {
+                        displayVehicleDetails(data.vehicleDetails);
+                        displayMOTDetails(data.motRecords);
+
+                        const loginNotice = document.getElementById('login-notice');
+                        if (loginNotice) {
+                            loginNotice.style.display = 'block';
+                        }
+
+
+                    // Prepare vehicle details for PDF generation
+                    const vehicleDetails = {
+                        registration: data.vehicleDetails.registration || 'N/A',
+                        make: data.vehicleDetails.make || 'N/A',
+                        model: data.vehicleDetails.model || 'N/A',
+                        fuelType: data.vehicleDetails.fuelType || 'N/A',
+                        primaryColour: data.vehicleDetails.primaryColour || 'N/A',
+                        engineSize: data.vehicleDetails.engineSize || 'N/A',
+                        registrationDate: data.vehicleDetails.registrationDate || 'N/A'
+                    };
+
+                    // Add vehicleDetails to the global scope or a suitable variable for later use
+                    window.vehicleDetails = vehicleDetails;
+    
+                        const btn = document.getElementById('pdf-button'); 
+                        btn.classList.remove('d-none'); 
+                        btn.style.display = 'inline-block';
+                        document.querySelector('.show-all-checkbox label').style.display = 'block';
+                    }
+                } else {
+                    showErrorModal('VRN not found. Please check and try again.');
+
+                    document.querySelector('.show-all-checkbox label').style.display = 'none';
+                }
+            } catch (error) {
+               document.getElementById('mot-report').innerHTML = `
+                    <div class="status-box">
+                    MOT test reports and history are only available for vehicles that are more than 3 years old from the date of their first registration
+                    </div>
+                `;
+                document.querySelector('.show-all-checkbox label').style.display = 'none';
+            }
+        }
+
+        function displayVehicleDetails(details) {
+            const container = document.getElementById('vehicle-details');
+            container.innerHTML = '';
+
+            let detailsHtml = '<h4 class="text-center">Vehicle Details</h4><table><tbody>';
+            
+            detailsHtml += `<tr>
+                <td>Registration</td>
+                <td>${details.registration || 'N/A'}</td>
+            </tr>
+            <tr>
+                <td>Make</td>
+                <td>${details.make || 'N/A'}</td>
+            </tr>
+            <tr>
+                <td>Model</td>
+                <td>${details.model || 'N/A'}</td>
+            </tr>
+            
+            <tr>
+                <td>Fuel Type</td>
+                <td>${details.fuelType || 'N/A'}</td>
+            </tr>
+            <tr>
+                <td>Colour</td>
+                <td>${details.primaryColour || 'N/A'}</td>
+            </tr>
+            <tr>
+                <td>Engine Size</td>
+                <td>${details.engineSize || 'N/A'}</td>
+            </tr>
+            <tr>
+                <td>Registration Date</td>
+                <td>${details.registrationDate || 'N/A'}</td>
+            </tr>
+            `;
+
+            detailsHtml += '</tbody></table>';
+            container.innerHTML = detailsHtml;
+        }
+
+        function displayMOTDetails(data) {
+            const container = document.getElementById('mot-report');
+            container.innerHTML = '';
+            
+            let reportHtml = '';
+            
+            data.forEach((record, index) => {
+               const isOpenByDefault = index === 0 || document.getElementById('show-all').checked;
+
+                const contentStyle = isOpenByDefault ? 'display: block;' : 'display: none;';
+                const iconClass = isOpenByDefault ? 'bi-chevron-up' : 'bi-chevron-down';
+                const testResultClass = record.testResult.toUpperCase() === 'PASSED' ? 'pass' : 'fail';
+                
+                reportHtml += `<div class="mot-block">
+                    <button class="collapsible"> ${record.motTestNumber || 'N/A'}
+                        <span class="chevron">
+                            <i class="bi ${iconClass}"></i>
+                        </span>
+                    </button>
+                    <div class="content" style="${contentStyle}">
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td>Test Result</td>
+                                    <td class="${testResultClass}">${record.testResult || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td>MOT Test Date</td>
+                                    <td>${record.completedDate || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td>MOT Expiry Date</td>
+                                    <td>${record.expiryDate || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td>Odometer Reading</td>
+                                    <td>${record.odometerReading || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td>MOT Test Number</td>
+                                    <td>${record.motTestNumber || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td>Test Notes</td>
+                                    <td>${Array.isArray(record.testNotes) ? record.testNotes.join(', ') : 'N/A'}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = reportHtml;
+            initCollapsibles();
+    
+            // Initialize collapsible buttons
+           
+            
+    
+            function initCollapsibles() {
+                document.querySelectorAll(".collapsible").forEach(button => {
+                    button.addEventListener("click", function () {
+                        const content = this.nextElementSibling;
+                        const icon = this.querySelector(".chevron i");
+
+                        const isOpen = content.style.display === "block";
+
+                        content.style.display = isOpen ? "none" : "block";
+                        icon.classList.toggle("bi-chevron-up", !isOpen);
+                        icon.classList.toggle("bi-chevron-down", isOpen);
+                    });
+                });
+            }
+        }
+
+        async function generatePDF() {
+    try {
+        const vrn = document.getElementById('vrn').value.trim();
+        const motRecords = Array.from(document.querySelectorAll('#mot-report .mot-block')).map(block => {
+            const rows = block.querySelectorAll('table tbody tr');
+            return {
+                completedDate: rows[1].querySelector('td:last-child').innerText,
+                expiryDate: rows[2].querySelector('td:last-child').innerText,
+                odometerReading: rows[3].querySelector('td:last-child').innerText,
+                testResult: rows[0].querySelector('td:last-child').innerText,
+                motTestNumber: rows[4].querySelector('td:last-child').innerText,
+                testNotes: rows[5].querySelector('td:last-child').innerText.split(', ')
+            };
+        });
+
+        if (motRecords.length === 0 || !window.vehicleDetails) {
+            alert('No data to export.');
+            return;
+        }
+
+        const response = await fetch('/generate-pdf/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                vrn: vrn,
+                vehicle_details: window.vehicleDetails,
+                motRecords: motRecords
+            })
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `MOT_History_${vrn}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } else {
+            const errorData = await response.json();
+            alert(`Error generating PDF: ${errorData.error}`);
+        }
+    } catch (error) {
+        showErrorModal('Service unavailable. Please try again later.');
+
+    }
+}
+
+        function toggleAllMOTResults() {
+            const showAll = document.getElementById('show-all').checked;
+            document.querySelectorAll('.mot-block').forEach(block => {
+                const content = block.querySelector('.content');
+                const icon = block.querySelector('.chevron i');
+
+                content.style.display = showAll ? 'block' : 'none';
+                icon.classList.toggle('bi-chevron-up', showAll);
+                icon.classList.toggle('bi-chevron-down', !showAll);
+            });
+            
+
+            // Automatically scroll to the bottom when "Show All" is checked
+            if (showAll) {
+                window.scrollTo({
+                    top: document.body.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        document.addEventListener('keydown', function() {
+            document.getElementById('vehicle-details').innerHTML = '';
+            document.getElementById('mot-report').innerHTML = '';
+            document.getElementById('show-all').checked = false;
+            document.getElementById('pdf-button').style.display = 'none';
+            const loginNotice = document.getElementById('login-notice');
+            if (loginNotice) {
+                loginNotice.style.display = 'none';
+            }
+        });
+
+        document.querySelector('.search-link').addEventListener('click', function(event) {
+            event.preventDefault();
+            document.getElementById('vrn').scrollIntoView({ behavior: 'smooth' });
+            console.log('User is typing in the VRN input'); // Log when user types
+            // Get the checkbox label and checkbox elements
+            const checkboxLabel = document.querySelector('.show-all-checkbox label');
+            const checkbox = document.getElementById('show-all');
+
+            // Show the checkbox label and checkbox
+            checkboxLabel.style.display = 'block'; // Show the label
+            checkbox.style.display = 'inline-block'; // Show the checkbox
+            checkbox.disabled = false; // Enable the checkbox
+        });
+    </script>
+</body>
+</html>
