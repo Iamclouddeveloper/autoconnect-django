@@ -142,7 +142,15 @@
     {% if request.user.is_authenticated %}
     <div class="nav-section mt-auto">
       <div class="nav-title">
-        <span class="bi-person-circle nav-icon"></span>
+       {% if request.user.profile_photo %}
+          <img src="{{ request.user.profile_photo.url }}"
+              class="rounded-circle shadow-sm"
+              width="38" height="38"
+              alt="Profile photo">
+      {% else %}
+          <span class="bi-person-circle nav-icon"></span>
+      {% endif %}
+
         <span class="nav-text">Account</span>
       </div>
 
