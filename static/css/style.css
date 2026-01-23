@@ -1287,3 +1287,67 @@ footer {
 .address-suggestions li:hover {
     background-color: #f5f7fa;
 }
+
+
+
+
+
+/* STAT CARDS - Responsive Fix */
+.stat-card {
+    width: 100%;              /* Fill column */
+    max-width: 160px;         /* Optional: limit width on large screens */
+    min-width: 120px;          /* Prevent shrinking too small */
+    margin: auto;             
+    background: linear-gradient(135deg, #e0f2fe, #f8fafc);
+    
+    border-radius: 12px;
+    padding: 15px 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+   
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.stat-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;          /* space between text and icon */
+}
+
+.stat-body > div:first-child {
+    flex: 1;              /* text takes available space */
+}
+
+
+
+
+
+
+/* Tablet adjustments */
+@media (max-width: 768px) {
+    .stat-card {
+        max-width: 140px;
+        padding: 12px 10px;
+    }
+    
+}
+
+
+@media (max-width: 576px) {
+    .stat-card {
+        max-width: 100%;
+        padding: 10px 8px;
+        margin-bottom: 10px;   /* spacing between rows */
+    }
+    .stat-body {
+         
+        align-items: center;
+        gap: 0.3rem;
+    }
+    
+}

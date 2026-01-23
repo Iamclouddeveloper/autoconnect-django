@@ -78,6 +78,14 @@
               class="{% if request.resolver_match.url_name == 'my_vehicle' %}active{% endif %}">
               Vehicle Dashboard
             </a>
+            <a href="{% url 'driver' %}"
+              class="{% if request.resolver_match.url_name == 'driver' %}active{% endif %}">
+              Driver Dashboard
+            </a>
+            <a href="{% url 'vehicle_logs' %}"
+              class="{% if request.resolver_match.url_name == 'vehicle_logs' %}active{% endif %}">
+              Log View
+            </a>
             {% else%}
             <a href="{% url 'my_vehicle' %}"
               class="{% if request.resolver_match.url_name == 'my_vehicle' %}active{% endif %}">

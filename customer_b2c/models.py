@@ -3,6 +3,9 @@ import uuid
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from django.core.exceptions import ValidationError
+from datetime import date
+
 class User(AbstractUser):
     
     ROLE_CHOICES = (
@@ -154,6 +157,185 @@ class Trip(models.Model):
 
     def __str__(self):
         return f"{self.start}"
+    
+    
+    
+class Driver(models.Model):
+    STATUS_CHOICES = (
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+    )
+
+    driver_id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    dob = models.DateField()
+
+    contact_number = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='active'
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='drivers_created'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'driver'
+        ordering = ['-created_at']
+
+    def clean(self):
+        # Driver must be at least 17 years old
+        today = date.today()
+        age = today.year - self.dob.year - (
+            (today.month, today.day) < (self.dob.month, self.dob.day)
+        )
+        if age < 17:
+            raise ValidationError("Driver must be at least 17 years old.")
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+
+class Licence(models.Model):
+    licence_id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
+    driver = models.OneToOneField(
+        Driver,
+        on_delete=models.CASCADE,
+        related_name='licence'
+    )
+
+    licence_number = models.CharField(max_length=50, unique=True)
+    issue_date = models.DateField()
+    expiry_date = models.DateField()
+
+    issuing_authority = models.CharField(
+        max_length=50,
+        default='DVLA'
+    )
+
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='licences_created'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'licence'
+
+    def clean(self):
+        if self.expiry_date <= date.today():
+            raise ValidationError("Licence expiry date must be in the future.")
+
+    def __str__(self):
+        return self.licence_number
+    
+    
+class LicenceCategory(models.Model):
+    DVLA_CATEGORIES = (
+        ('AM', 'AM'),
+        ('A1', 'A1'),
+        ('A2', 'A2'),
+        ('A', 'A'),
+        ('B', 'B'),
+        ('BE', 'BE'),
+        ('C1', 'C1'),
+        ('C1E', 'C1E'),
+        ('C', 'C'),
+        ('CE', 'CE'),
+        ('D1', 'D1'),
+        ('D1E', 'D1E'),
+        ('D', 'D'),
+        ('DE', 'DE'),
+    )
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
+    licence = models.ForeignKey(
+        Licence,
+        on_delete=models.CASCADE,
+        related_name='categories'
+    )
+
+    category_code = models.CharField(
+        max_length=5,
+        choices=DVLA_CATEGORIES
+    )
+
+    class Meta:
+        db_table = 'licence_category'
+        unique_together = ('licence', 'category_code')
+
+    def __str__(self):
+        return self.category_code
+
+
+
+
+class AuditLog(models.Model):
+    ACTION_CHOICES = (
+        ("CREATE", "Create"),
+        ("UPDATE", "Update"),
+        ("DELETE", "Delete"),
+    )
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    model_name = models.CharField(max_length=100)
+    object_id = models.CharField(max_length=100)
+    object_repr = models.CharField(max_length=255)
+
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
+
+    field_name = models.CharField(max_length=100, null=True, blank=True)
+    old_value = models.TextField(null=True, blank=True)
+    new_value = models.TextField(null=True, blank=True)
+
+    # USER ID STORED HERE
+    performed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    performed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "audit_log"
+        ordering = ["-performed_at"]
+
+    def __str__(self):
+        return f"{self.model_name} {self.action}"
 
 
 class EXample(models.Model):

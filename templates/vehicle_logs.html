@@ -1,0 +1,447 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Console</title>
+    <link rel="stylesheet" href="{% static 'bootstrap/bootstrap.min.css' %}">
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+   
+    <link rel="stylesheet"
+          href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+    
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        
+                
+        
+        /* TABLE */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            border:1px solid #e0e0e0;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px !important;
+            text-align: left !important;
+        }
+        th {
+            background: var(--primary);
+            color: #fff;
+        }
+        tr:nth-child(even) { background: #eef2f6   !important; }
+        
+        tr:hover { background: #e6f0f7 !important; }
+
+                
+        .dataTables_wrapper .dataTables_filter input,
+        .dataTables_wrapper .dataTables_length select {
+            border-radius: 8px;
+            border: 1px solid var(--border-light );
+            padding: 4px 8px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            border-radius: 8px !important;
+            padding: 4px 10px;
+            margin: 2px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: linear-gradient(
+            135deg,
+            var(--primary) 0%,
+            var(--primary-dark) 100%
+        );
+            color: #fff !important;
+            border: none !important;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #e0f2fe !important;
+            color: #0f172a !important;
+        }
+
+        /* ===============================
+        SORT ICON SPACING
+        ================================ */
+        .dataTables_wrapper .sorting::before,
+        .dataTables_wrapper .sorting::after {
+            display: block;
+            margin: 4px 0;
+        }
+        /* Hide sort icons for disabled columns */
+        #usersTable th.sorting_disabled::before,
+        #usersTable th.sorting_disabled::after {
+            display: none !important;
+        }
+
+        .badge-yes { color: green; font-weight: bold; }
+        .badge-no { color: red; font-weight: bold; }
+        .change-span { font-size: 12px; color: #555; display: block; }
+
+
+    </style>
+</head>
+<body  style="background: linear-gradient(135deg, #e0f2fe, #f8fafc);">
+
+{% include 'side_navbar.html' %}
+
+<div class="container my-5">
+
+
+    <div class="row g-4">
+
+        <!-- Vehicles Table -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="test-center">Vehicle Update Logs</h2>
+                    
+
+                    <label><b>Select Log Date:</b></label>
+                    <select id="logFileSelect">
+                        <option value="">-- Select Date --</option>
+                        {% for file in files %}
+                            <option value="{{ file }}">{{ file }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <hr>
+
+                        <div class="row g-3 mb-4" id="logStats">
+
+    <!-- Total VRNs -->
+    <div class="col-md-3 col-6">
+        <div class="stat-card shadow-sm border-0 clickable" data-filter="all">
+            <div class="stat-card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted mb-1 small">Total VRNs</p>
+                    <h3 class="fw-bold mb-0" id="stat-total">0</h3>
+                </div>
+                <div class="icon bg-primary-subtle text-primary rounded-circle">
+                    <i class="fa fa-car fa-lg"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOT Changes -->
+    <div class="col-md-3 col-6">
+        <div class="stat-card shadow-sm border-0 clickable" data-filter="mot">
+            <div class="stat-card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted mb-1 small">MOT Changes</p>
+                    <h3 class="fw-bold mb-0" id="stat-mot">0</h3>
+                </div>
+                <div class="icon bg-success-subtle text-success rounded-circle">
+                    <i class="fa fa-check-circle fa-lg"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tax Changes -->
+    <div class="col-md-3 col-6">
+        <div class="stat-card shadow-sm border-0 clickable" data-filter="tax">
+            <div class="stat-card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted mb-1 small">Tax Changes</p>
+                    <h3 class="fw-bold mb-0" id="stat-tax">0</h3>
+                </div>
+                <div class="icon bg-warning-subtle text-warning rounded-circle">
+                    <i class="fa fa-file-invoice fa-lg"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VRN Not Found -->
+    <div class="col-md-3 col-6">
+        <div class="stat-card shadow-sm border-0 clickable" data-filter="invalid">
+            <div class="stat-card-body d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted mb-1 small">VRN Not Found</p>
+                    <h3 class="fw-bold mb-0" id="stat-invalid">0</h3>
+                </div>
+                <div class="icon bg-danger-subtle text-danger rounded-circle">
+                    <i class="fa fa-exclamation-triangle fa-lg"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+                    <div class="input-container my-3">
+                            <i class="fa fa-search" aria-hidden="true"></i>
+                            <input type="text" id="vehicleLogSearch" class="form-control  px-5 w-100" placeholder="Search...">
+                    </div>
+                    <div class="table-responsive">
+                        <table id="logsTable">
+                            <thead>
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>VRN</th>
+                                    <th>DVSA API</th>
+                                    <th>DVLA API</th>
+                                    <th>MOT Changes</th>
+                                    <th>Tax Changes</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="{% static 'bootstrap/bootstrap.bundle.min.js' %}"></script>
+<script>
+function formatDateTime(value) {
+    if (!value) return '-';
+
+    const date = new Date(value);
+    if (isNaN(date)) return value;
+
+    const months = ["Jan","Feb","Mar","Apr","May","Jun",
+                    "Jul","Aug","Aug","Oct","Nov","Dec"];
+
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+
+    return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`;
+}
+
+function formatShortDate(value) {
+    if (!value) return '-';
+
+    const date = new Date(value);
+    if (isNaN(date)) return value;
+
+    const months = ["Jan","Feb","Mar","Apr","May","Jun",
+                    "Jul","Aug","Sep","Oct","Nov","Dec"];
+
+    return `${String(date.getDate()).padStart(2, '0')}-${months[date.getMonth()]}-${date.getFullYear()}`;
+}
+
+
+const table = $('#logsTable').DataTable({
+    order: [[0, "desc"]],
+    pageLength: 10,
+    lengthChange: false,
+    ordering: true,
+    searching: true,
+    dom: 'rt<"bottom"ip>',
+    columns: [
+        {
+            data: "timestamp",
+            render: (d, type) =>
+                type === 'sort'
+                    ? new Date(d).getTime()
+                    : formatDateTime(d)
+        },
+        { data: "vrn" },
+
+        {
+            data: "dvsa_api_called",
+            render: d => d
+                ? '<span class="badge-yes">Yes</span>'
+                : '<span class="badge-no">No</span>'
+        },
+        {
+            data: "dvla_api_called",
+            render: d => d
+                ? '<span class="badge-yes">Yes</span>'
+                : '<span class="badge-no">No</span>'
+        },
+
+        {
+            data: "mot_changes",
+            render: d => {
+                if (!d || !d.changed)
+                    return '<span class="badge-no">No</span>';
+                if (d.changed === "N/A")
+                   return '<span class="badge-no">N/A</span>';
+
+                return `
+                    <span class="badge-yes">Yes</span>
+                    <span class="change-span">${d.old_status} → ${d.new_status}</span>
+                    <span class="change-span">${formatShortDate(d.old_expiry)} → ${formatShortDate(d.new_expiry)}</span>
+                `;
+            }
+        },
+
+        {
+            data: "tax_changes",
+            render: d => {
+                if (!d || !d.changed)
+                    return '<span class="badge-no">No</span>';
+                 if (d.changed === "N/A")
+                    return '<span class="badge-no">N/A</span>';
+
+                return `
+                    <span class="badge-yes">Yes</span>
+                    <span class="change-span">${d.old_status} → ${d.new_status}</span>
+                    <span class="change-span">${formatShortDate(d.old_due)} → ${formatShortDate(d.new_due)}</span>
+                `;
+            }
+        },
+
+        {
+            data: "remarks",
+            render: d => `
+                <div>DVSA: ${d?.dvsa ?? '-'}</div>
+                <div>DVLA: ${d?.dvla ?? '-'}</div>
+            `
+        }
+    ]
+    
+});
+
+$('#vehicleLogSearch').on('keyup', function () {
+        table.search(this.value).draw();
+    });
+
+function formatFilename(filename) {
+    if (!filename) return '';
+
+    const name = filename.replace('.json', '');
+
+    // 2026-01-21_10-00
+    if (name.includes('_')) {
+        const [datePart, timePart] = name.split('_');
+        const time = timePart.replace('-', ':');
+        return formatDateTime(`${datePart}T${time}`);
+    }
+
+    // 2026-01-21
+    return formatShortDate(name);
+}
+
+
+function loadLogFile(file) {
+    $.get("{% url 'vehicle_logs_api' %}", { file }, function (resp) {
+        table.clear().rows.add(resp.data).draw();
+        updateStats(resp.data);
+    });
+}
+
+//  DEFAULT LOAD LATEST FILE
+$(document).ready(function () {
+    let latestFile = "{{ latest_file }}";
+    if (latestFile) {
+        $('#logFileSelect').val(latestFile);
+        loadLogFile(latestFile);
+    }
+});
+
+//  LOAD  DROPDOWN CHANGES
+$('#logFileSelect').on('change', function () {
+    let file = $(this).val();
+    if (file) loadLogFile(file);
+});
+
+$(document).ready(function () {
+
+    // Format dropdown filenames
+    $('#logFileSelect option').each(function () {
+        const filename = $(this).val();
+        if (filename) {
+            $(this).text(formatFilename(filename));
+        }
+    });
+
+    // Load latest file
+    let latestFile = "{{ latest_file }}";
+    if (latestFile) {
+        $('#logFileSelect').val(latestFile);
+        loadLogFile(latestFile);
+    }
+});
+
+
+let lastLoadedData = [];
+
+function updateStats(data) {
+    lastLoadedData = data;
+
+    let total = data.length;
+    let mot = 0;
+    let tax = 0;
+    let invalid = 0;
+
+    data.forEach(row => {
+        if (row.mot_changes?.changed === true) mot++;
+        if (row.tax_changes?.changed === true) tax++;
+
+
+        if (
+            row.remarks?.dvsa?.includes('404') ||
+            row.remarks?.dvla?.includes('404')
+        ) {
+            invalid++;
+        }
+    });
+
+    $('#stat-total').text(total);
+    $('#stat-mot').text(mot);
+    $('#stat-tax').text(tax);
+    $('#stat-invalid').text(invalid);
+}
+
+$.fn.dataTable.ext.search.push(function (settings, data, index, rowData) {
+
+    if (!window.activeCardFilter || window.activeCardFilter === 'all') {
+        return true;
+    }
+
+    if (window.activeCardFilter === 'mot') {
+        return rowData.mot_changes?.changed === true;
+    }
+
+    if (window.activeCardFilter === 'tax') {
+        return rowData.tax_changes?.changed === true;
+    }
+
+    if (window.activeCardFilter === 'invalid') {
+        return (
+            rowData.remarks?.dvsa?.includes('404') ||
+            rowData.remarks?.dvla?.includes('404')
+        );
+    }
+
+    return true;
+});
+
+
+window.activeCardFilter = 'all';
+
+$('.stat-card').on('click', function () {
+    window.activeCardFilter = $(this).data('filter');
+    table.draw();
+});
+
+
+</script>
+
+</body>
+</html>

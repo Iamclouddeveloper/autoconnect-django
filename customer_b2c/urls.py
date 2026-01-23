@@ -36,7 +36,15 @@ from .views import (
     vehicle_mileage_summary,
     vehicle_list,
     mileage_report_pdf,
-    
+    driver,
+    create_driver_with_licence,
+    update_driver_with_licence,
+    driver_delete,
+    driver_and_licence_logs,
+    download_driver_logs,
+    user_detail,
+    vehicle_logs_view,
+    vehicle_logs_api,
 )
 
 urlpatterns = [
@@ -98,6 +106,24 @@ urlpatterns = [
         mileage_report_pdf,
         name="mileage_report_pdf"
     ),
+    
+    
+    path("drivers/", driver, name="driver"),
+    path("drivers/create/", create_driver_with_licence, name="driver_create"),
+    path("driver/<uuid:pk>/update/", update_driver_with_licence, name="driver_update"),
+    path('driver/<uuid:driver_id>/delete/', driver_delete, name='driver_delete'),
+    path(
+        "driver/logs/",
+        driver_and_licence_logs,
+        name="driver_and_licence_logs"
+    ),
+    path("driver/logs/download/", download_driver_logs, name="download_driver_logs"),
+    path('users/<int:user_id>/', user_detail, name='admin_user_detail'),
+     path("vehicle-logs/", vehicle_logs_view, name="vehicle_logs"),
+    path("vehicle-logs/api/", vehicle_logs_api, name="vehicle_logs_api"),
+
+
+
 
 
 

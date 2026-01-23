@@ -26,7 +26,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from .models import Vehicle
 from django.core.mail import EmailMultiAlternatives
-import random, io
+import random, io, os
 
 from PIL import Image, ImageDraw, ImageFont
 from django.views.decorators.http import require_GET
@@ -893,7 +893,6 @@ def generate_pdf_endpoint(request):
 
 
 # admin dashbord
-
 @login_required
 def admin_dashboard(request):
 
@@ -908,12 +907,21 @@ def admin_dashboard(request):
     # Sub admin → exclude super_admin
     else:
         users = User.objects.exclude(role__in=['super_admin', 'sub_admin']).order_by('-date_joined')
+        
+    analytics = {}
+    if request.user.role == 'super_admin':
+        analytics = {
+            'total_users': User.objects.count(),
+            'total_vehicles': Vehicle.objects.count(),
+            'total_drivers': Driver.objects.count(),
+            'total_trips': Trip.objects.count(),
+        }
 
     context = {
-        'users': users
+        'users': users,
+        'analytics': analytics,
     }
     return render(request, 'admin_dashboard.html', context)
-
 
 @login_required
 def toggle_block_user(request, user_id):
@@ -1087,6 +1095,7 @@ def add_vehicle(request):
 
             dvla_response.raise_for_status()
             dvla_data = dvla_response.json()
+           
             
             today = date.today()
             #  New vehicle logic 
@@ -1145,7 +1154,7 @@ def add_vehicle(request):
 @login_required()
 def my_vehicle(request):
     vehicles = Vehicle.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'my-vehicle.html', {'vehicles': vehicles})
+    return render(request, 'my-vehicle.html', {'vehicles': vehicles, "today": date.today(),})
 
 
 
@@ -1555,3 +1564,466 @@ def mileage_report_pdf(request):
     response = HttpResponse(pdf, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
+
+
+
+
+# Driver and Licence Module 
+
+from .models import Driver, Licence, LicenceCategory, AuditLog
+from django.db import transaction,IntegrityError
+from django.db.models import Prefetch
+from django.core.exceptions import PermissionDenied
+
+
+def log_action(
+    *,
+    instance,
+    action,
+    user,
+    field_name=None,
+    old_value=None,
+    new_value=None
+):
+    AuditLog.objects.create(
+        model_name=instance.__class__.__name__,
+        object_id=str(instance.pk),
+        object_repr=str(instance),
+        action=action,
+        field_name=field_name,
+        old_value=str(old_value) if old_value is not None else None,
+        new_value=str(new_value) if new_value is not None else None,
+        performed_by=user  #  USER ID SAVED
+    )
+
+@login_required
+def driver(request):
+    drivers = (
+        Driver.objects
+        .select_related("licence")  # OneToOneField
+        .prefetch_related(
+            Prefetch(
+                "licence__categories",
+                queryset=LicenceCategory.objects.all()
+            )
+        )
+        .order_by("-created_at")
+    )
+
+    return render(request, "driver.html", {
+        "drivers": drivers,
+        "licence_categories": LicenceCategory.DVLA_CATEGORIES,
+        "today": date.today(),
+    })
+
+
+@login_required
+@transaction.atomic
+def create_driver_with_licence(request):
+    if request.method == "POST":
+        try:
+            licence_number = request.POST.get("licence_number", "").strip().upper()
+            if not licence_number:
+                messages.error(request, "Licence number cannot be empty.")
+                return redirect("driver")
+
+            
+            if Licence.objects.filter(licence_number=licence_number).exists():
+                messages.error(request, "Licence number already exists.")
+                return redirect("driver")
+            
+            
+            # ---------- DRIVER ----------
+            dob = date.fromisoformat(request.POST.get("dob"))
+
+            driver = Driver.objects.create(
+                first_name=request.POST.get("first_name"),
+                last_name=request.POST.get("last_name"),
+                dob=dob,
+                contact_number=request.POST.get("contact_number") or None,
+                email=request.POST.get("email") or None,
+                address=request.POST.get("address") or None,
+                created_by=request.user
+            )
+            driver.full_clean()
+            driver.save()
+            
+            log_action(                    
+                instance=driver,
+                action="CREATE",
+                user=request.user
+            )
+
+            # ---------- LICENCE ----------
+            issue_date = date.fromisoformat(request.POST.get("issue_date"))
+            expiry_date = date.fromisoformat(request.POST.get("expiry_date"))
+
+            licence = Licence.objects.create(
+                driver=driver,
+                licence_number=licence_number,
+                issue_date=issue_date,
+                expiry_date=expiry_date,
+                created_by=request.user
+            )
+            licence.full_clean()
+            licence.save()
+            
+            log_action(                    
+                instance=licence,
+                action="CREATE",
+                user=request.user
+            )
+
+            # ---------- CATEGORIES ----------
+            categories = request.POST.getlist("categories")
+            if not categories:
+                raise ValidationError("At least one licence category is required.")
+
+            for cat in categories:
+                LicenceCategory.objects.create(
+                    licence=licence,
+                    category_code=cat
+                )
+
+            messages.success(request, "Driver & licence created successfully.")
+            return redirect("driver")
+        
+        except IntegrityError:
+            transaction.set_rollback(True)
+            messages.error(request, "Licence number already exists.")
+
+        except ValidationError as e:
+            transaction.set_rollback(True)
+            messages.error(request, e.messages[0])
+
+    return redirect("driver")
+
+
+
+
+@login_required
+@transaction.atomic
+def update_driver_with_licence(request, pk):
+    driver = get_object_or_404(Driver, driver_id=pk)
+    licence = driver.licence
+
+    if request.method == "POST":
+        try:
+            
+            licence_number = request.POST.get("licence_number", "").strip().upper()
+            if not licence_number:
+                messages.error(request, "Licence number cannot be empty.")
+                return redirect("driver")
+
+            
+            if Licence.objects.exclude(
+                licence_id=licence.licence_id
+            ).filter(
+                licence_number=licence_number
+            ).exists():
+                messages.error(request, "Licence number already exists.")
+                return redirect("driver")
+            
+            old_driver = {
+                "first_name": driver.first_name,
+                "last_name": driver.last_name,
+                "dob": driver.dob,
+                "contact_number": driver.contact_number,
+                "email": driver.email,
+                "address": driver.address,
+            }
+
+            old_licence = {
+                "licence_number": licence.licence_number,
+                "issue_date": licence.issue_date,
+                "expiry_date": licence.expiry_date,
+            }
+            
+            
+            # ---------- DRIVER ----------
+            driver.first_name = request.POST.get("first_name")
+            driver.last_name = request.POST.get("last_name")
+            driver.dob = date.fromisoformat(request.POST.get("dob"))
+            driver.contact_number = request.POST.get("contact_number") or None
+            driver.email = request.POST.get("email") or None
+            driver.address = request.POST.get("address") or None
+            driver.full_clean()
+            driver.save()
+            
+            # ================= LOG DRIVER CHANGES =================
+            for field, old_value in old_driver.items():
+                new_value = getattr(driver, field)
+                if old_value != new_value:
+                    log_action(
+                        instance=driver,
+                        action="UPDATE",
+                        user=request.user,
+                        field_name=field,
+                        old_value=old_value,
+                        new_value=new_value
+                    )
+
+            # ---------- LICENCE ----------
+            licence.licence_number = licence_number
+            licence.issue_date = date.fromisoformat(request.POST.get("issue_date"))
+            licence.expiry_date = date.fromisoformat(request.POST.get("expiry_date"))
+            licence.full_clean()
+            licence.save()
+            
+            for field, old_value in old_licence.items():
+                new_value = getattr(licence, field)
+                if old_value != new_value:
+                    log_action(
+                        instance=licence,
+                        action="UPDATE",
+                        user=request.user,
+                        field_name=field,
+                        old_value=old_value,
+                        new_value=new_value
+                    )
+
+
+            # ---------- CATEGORIES ----------
+            old_categories = list(
+                licence.categories.values_list("category_code", flat=True)
+            )
+
+            licence.categories.all().delete()
+            for cat in request.POST.getlist("categories"):
+                LicenceCategory.objects.create(
+                    licence=licence,
+                    category_code=cat
+                )
+                
+            new_categories = request.POST.getlist("categories")
+
+            if set(old_categories) != set(new_categories):
+                log_action(
+                    instance=licence,
+                    action="UPDATE",
+                    user=request.user,
+                    field_name="categories",
+                    old_value=", ".join(sorted(old_categories)),
+                    new_value=", ".join(sorted(new_categories))
+                )
+
+            messages.success(request, "Driver updated successfully.")
+            return redirect("driver")
+
+        except IntegrityError:
+            transaction.set_rollback(True)
+            messages.error(request, "Licence number already exists.")
+
+        except ValidationError as e:
+            transaction.set_rollback(True)
+            messages.error(request, e.messages[0])
+
+    return redirect("driver")
+
+
+@login_required
+def driver_delete(request, driver_id):
+    driver = get_object_or_404(Driver, driver_id=driver_id)
+
+    if request.method == "POST":
+        
+        log_action(             
+            instance=driver,
+            action="DELETE",
+            user=request.user
+        )
+        driver.delete()
+        messages.success(request, "Driver deleted successfully.")
+        return redirect('driver')  
+    
+    return redirect('driver')
+
+
+
+
+
+@login_required
+def driver_and_licence_logs(request):
+    driver_id = request.GET.get("driver_id")
+    licence_id = request.GET.get("licence_id")
+    
+    driver = Driver.objects.filter(driver_id=driver_id).first()
+    licence = Licence.objects.filter(licence_id=licence_id).first()
+
+    driver_name = (
+        f"{driver.first_name} {driver.last_name}"
+        if driver else "Unknown Driver"
+    )
+
+    licence_number = (
+        licence.licence_number
+        if licence else "Unknown Licence"
+    )
+
+    logs = AuditLog.objects.filter(
+        object_id__in=[driver_id, licence_id]
+    ).select_related("performed_by").order_by("-performed_at")
+
+    data = []
+    for log in logs:
+        user_name ='None'
+        if log.performed_by_id:
+            user = User.objects.filter(id=log.performed_by_id).first()
+            if user:
+                user_name = user.get_full_name() or user.username
+        data.append({
+            "model": log.model_name,   # Driver / Licence
+            "action": log.action,
+            "field": log.field_name or "-",
+            "old": log.old_value or "-",
+            "new": log.new_value or "-",
+            "user": (
+                 log.performed_by.username
+                if log.performed_by else "Deleted User"
+            ),
+            "time": log.performed_at.strftime("%d-%b-%Y %I:%M %p"),
+            "driver_name": driver_name,
+            "licence_number": licence_number,
+        })
+
+    return JsonResponse({"logs": data})
+
+
+
+@login_required
+def download_driver_logs(request):
+    driver_id = request.GET.get("driver_id")
+    licence_id = request.GET.get("licence_id")
+
+    driver = Driver.objects.filter(driver_id=driver_id).first()
+    licence = Licence.objects.filter(licence_id=licence_id).first()
+
+    driver_name = (
+        f"{driver.first_name} {driver.last_name}"
+        if driver else "Unknown Driver"
+    )
+
+    licence_number = (
+        licence.licence_number
+        if licence else "Unknown Licence"
+    )
+
+    logs = AuditLog.objects.filter(
+        object_id__in=[driver_id, licence_id]
+    ).select_related("performed_by").order_by("performed_at")
+
+    lines = []
+
+    for log in logs:
+        lines.append(log.performed_at.strftime("%d-%b-%Y %I:%M %p"))
+        lines.append(f"{log.model_name} ({driver_name} – {licence_number})")
+
+        if log.action == "CREATE":
+            lines.append("created")
+        elif log.action == "UPDATE":
+            lines.append("updated")
+            lines.append(f'{log.field_name}: "{log.old_value}" → "{log.new_value}"')
+        elif log.action == "DELETE":
+            lines.append("deleted")
+
+        user = log.performed_by.username if log.performed_by else "Deleted User"
+        lines.append(f"by {user}")
+        lines.append("-" * 40)
+
+    content = "\n".join(lines)
+
+    filename = f"{driver_name.replace(' ', '_')}_{licence_number}.log"
+
+    response = HttpResponse(content, content_type="text/plain")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+
+
+# user admin dashbord
+
+@login_required
+def user_detail(request, user_id):
+    # only super admin
+    if request.user.role != 'super_admin':
+        return redirect('admin_dashboard')
+
+    user_obj = get_object_or_404(User, id=user_id)
+
+    vehicles = Vehicle.objects.filter(user=user_obj).order_by('-created_at')
+    trips = Trip.objects.filter(user=user_obj).select_related('vehicle').order_by('-created_at')
+    drivers = (
+        Driver.objects
+        .filter(created_by=user_obj)
+        .select_related('licence')
+        .prefetch_related('licence__categories')
+        .order_by('-created_at')
+    )
+
+    context = {
+        'user_obj': user_obj,
+        'vehicles': vehicles,
+        'trips': trips,
+        'drivers': drivers,
+        'total_drivers': drivers.count(),
+        'total_vehicles': vehicles.count(),
+        'total_trips': trips.count(),
+        "today": date.today(),
+    }
+
+    return render(request, 'user_detail.html', context)
+
+
+LOG_BASE_DIR = os.path.join(settings.BASE_DIR, "logs", "vehicle_updates")
+
+
+def get_log_files():
+    """
+    Returns log files sorted latest first
+    """
+    if not os.path.exists(LOG_BASE_DIR):
+        return []
+
+    return sorted(
+        [f for f in os.listdir(LOG_BASE_DIR) if f.endswith(".json")],
+        reverse=True
+    )
+
+
+def read_log_file(filename):
+    path = os.path.join(LOG_BASE_DIR, filename)
+
+    if not os.path.exists(path):
+        return []
+
+    with open(path, "r") as f:
+        return json.load(f)
+    
+
+
+
+def vehicle_logs_view(request):
+    """
+    Page with dropdown + table
+    """
+    files = get_log_files()
+
+    return render(request, "vehicle_logs.html", {
+        "files": files,
+        "latest_file": files[0] if files else None
+    })
+
+
+def vehicle_logs_api(request):
+    """
+    Ajax endpoint to load selected log file
+    """
+    filename = request.GET.get("file")
+
+    if not filename:
+        return JsonResponse({"data": []})
+
+    data = read_log_file(filename)
+    return JsonResponse({"data": data})
+

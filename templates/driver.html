@@ -1,0 +1,670 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver</title>
+    <link rel="stylesheet" href="{% static 'bootstrap/bootstrap.min.css' %}">
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+   
+    <link rel="stylesheet"
+          href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+    
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        
+                
+        
+        /* TABLE */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px !important;
+            text-align: left !important;
+        }
+        th {
+            background: var(--primary);
+            color: #fff;
+        }
+        tr:nth-child(even) { background: #eef2f6   !important; }
+        
+        tr:hover { background: #e6f0f7 !important; }
+
+                
+        .dataTables_wrapper .dataTables_filter input,
+        .dataTables_wrapper .dataTables_length select {
+            border-radius: 8px;
+            border: 1px solid var(--border-light );
+            padding: 4px 8px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            border-radius: 8px !important;
+            padding: 4px 10px;
+            margin: 2px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: linear-gradient(
+            135deg,
+            var(--primary) 0%,
+            var(--primary-dark) 100%
+        );
+            color: #fff !important;
+            border: none !important;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #e0f2fe !important;
+            color: #0f172a !important;
+        }
+
+        /* ===============================
+        SORT ICON SPACING
+        ================================ */
+        .dataTables_wrapper .sorting::before,
+        .dataTables_wrapper .sorting::after {
+            display: block;
+            margin: 4px 0;
+        }
+        /* Hide sort icons for disabled columns */
+        #usersTable th.sorting_disabled::before,
+        #usersTable th.sorting_disabled::after {
+            display: none !important;
+        }
+
+        
+
+        /* Desktop */
+        .driver-modal {
+        max-width: 1100px;
+        }
+
+        /* Modal height control */
+        #driverModal .modal-content {
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        }
+
+        /* Header & footer fixed */
+        #driverModal .modal-header,
+        #driverModal .modal-footer {
+        flex-shrink: 0;
+        }
+
+        /* Scroll only body */
+        #driverModal .modal-body {
+        overflow-y: auto;
+        }
+
+
+        @media (max-width: 768px) {
+
+        #driverModal .modal-dialog {
+            margin: 0;
+            max-width: 100%;
+            height: 100%;
+        }
+
+        #driverModal .modal-content {
+            height: 75vh;
+            border-radius: 0;
+        }
+
+        #driverModal .modal-body {
+            padding: 1rem;
+        }
+
+        #driverModal h6 {
+            font-size: 1rem;
+        }
+
+        #driverModal label {
+            font-size: 0.9rem;
+        }
+
+        #driverModal .form-control {
+            font-size: 0.95rem;
+        }
+        }
+
+
+    </style>
+</head>
+<body class="bg-primary">
+
+{% include 'side_navbar.html' %}
+
+    
+ 
+<div class="container card my-3 py-4 rounded-3">
+
+     <h1 style="text-align: center;">Driver Dashboard</h1>
+     <div class="d-flex justify-content-end mb-3">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#driverModal">
+            <i class="fas fa-plus"></i> Add Driver
+        </button>
+    </div>
+
+     <div class="input-container mb-3">
+        <i class="fa fa-search"></i>
+        <input type="text"
+               id="searchInput"
+               class="form-control px-5 w-100"
+               placeholder="Search driver...">
+    </div>
+
+ <div class="table-responsive">
+        <table id="driverTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>DOB</th>
+                    <th>Licence No</th>
+                    <th>Expiry Date</th>
+                    <th>Categories</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+            {% for driver in drivers %}
+                <tr>
+                    
+                    <td>
+                        {{ driver.first_name }} {{ driver.last_name }}
+                    </td>
+
+                    
+                    <td data-order="{{ driver.dob|date:'Y-m-d' }}">
+                        {{ driver.dob|date:"d-M-Y" }}
+                    </td>
+
+                    
+                    <td>
+                        {{ driver.licence.licence_number }}
+                    </td>
+
+                    
+                    <td class="{% if driver.licence.expiry_date and driver.licence.expiry_date < today %}text-danger{% endif %}" data-order="{{ driver.licence.expiry_date|date:'Y-m-d' }}">
+                        {{ driver.licence.expiry_date|date:"d-M-Y" }}
+                    </td>
+
+                    
+                    <td>
+                        {% for cat in driver.licence.categories.all %}
+                            <span class="badge bg-info text-dark me-1">
+                                {{ cat.category_code }}
+                            </span>
+                        {% empty %}
+                            <span class="text-muted">None</span>
+                        {% endfor %}
+                    </td>
+
+                    
+                    <td>
+                        {% if driver.status == 'active' %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+
+                    
+                    <td class="text-nowrap">
+                        <a href="javascript:void(0)"
+                            class="btn btn-sm btn-primary editDriverBtn"
+                            title="Edit"
+                            data-driver='{
+                                "id": "{{ driver.driver_id }}",
+                                "first_name": "{{ driver.first_name }}",
+                                "last_name": "{{ driver.last_name }}",
+                                "dob": "{{ driver.dob|date:'Y-m-d' }}",
+                                "contact_number": "{{ driver.contact_number|default:'' }}",
+                                "email": "{{ driver.email|default:'' }}",
+                                "address": "{{ driver.address|default:'' }}",
+                                "licence_number": "{{ driver.licence.licence_number }}",
+                                "issue_date": "{{ driver.licence.issue_date|date:'Y-m-d' }}",
+                                "expiry_date": "{{ driver.licence.expiry_date|date:'Y-m-d' }}",
+                                "categories": [{% for c in driver.licence.categories.all %}"{{ c.category_code }}"{% if not forloop.last %},{% endif %}{% endfor %}]
+                            }'>
+                            <i class="bi bi-pencil-square"></i>
+                            </a>
+
+
+                        <form method="post"
+                            action="{% url 'driver_delete' driver.driver_id %}"
+                            style="display:inline;"
+                            onsubmit="return confirm('Delete this driver?');">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="btn btn-sm btn-danger"
+                                    title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+
+
+                        <a href="javascript:void(0)"
+                            class="btn btn-sm btn-secondary viewLogsBtn"
+                            title="Logs"
+                            data-driver-id="{{ driver.driver_id }}"
+                            data-licence-id="{{ driver.licence.licence_id }}">
+                            <i class="bi bi-book"></i>
+                        </a>
+
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+</div>
+
+
+
+
+<div class="modal fade" id="driverModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable driver-modal">
+    <form method="post" action="{% url 'driver_create' %}" id="driverForm"  data-create-url="{% url 'driver_create' %}">
+      {% csrf_token %}
+      <input type="hidden" name="driver_id" id="driver_id">
+
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="driverModalTitle">Create Driver & Licence Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <!-- DRIVER -->
+          <h6 class="text-primary mb-2">Driver Details</h6>
+          <div class="row g-2 g-md-3">
+            <div class="col-md-6">
+              <label>First Name *</label>
+              <input type="text" name="first_name" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label>Last Name *</label>
+              <input type="text" name="last_name" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label>Date of Birth *</label>
+              <input type="date" name="dob" id="dob" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label>Contact Number</label>
+              <input type="text" name="contact_number" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label>Email</label>
+              <input type="email" name="email" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label>Address</label>
+              <textarea name="address" class="form-control" required></textarea>
+            </div>
+          </div>
+
+          <hr>
+
+          <!-- LICENCE -->
+          <h6 class="text-primary mb-2">Licence Details</h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label>Licence Number *</label>
+              <input type="text" name="licence_number" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label>Issue Date *</label>
+              <input type="date" name="issue_date" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label>Expiry Date *</label>
+              <input type="date" name="expiry_date" id="expiry_date" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <label>Licence Categories *</label>
+            <div class="row">
+              {% for code,label in licence_categories %}
+              <div class="col-md-3">
+                <div class="form-check">
+                  <input class="form-check-input category-checkbox"
+                         type="checkbox"
+                         name="categories"
+                         value="{{ code }}">
+                  <label class="form-check-label">{{ label }}</label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div id="formError" class="text-danger mt-2 d-none"></div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary" id="submitBtn">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal fade" id="logsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg  modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Driver Activity Logs</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+        <ul class="list-group list-group-flush" id="logsList">
+          <li class="list-group-item text-muted text-center">
+            Loading...
+          </li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            Close
+        </button>
+
+        <a id="downloadLogsBtn"
+            class="btn btn-primary"
+            href="#">
+            <i class="bi bi-download me-1"></i> Download Logs
+        </a>
+      </div>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="{% static 'bootstrap/bootstrap.bundle.min.js' %}"></script>
+
+
+<script>
+
+
+const table = $('#driverTable').DataTable({
+    pageLength: 10,
+    lengthChange: false,
+    ordering: true,
+    searching: true,
+    dom: 'rt<"bottom"ip>',
+    language: {
+        paginate: {
+            previous: "<",
+            next: ">"
+        }
+    },
+    columnDefs: [
+        { orderable: false, targets: -1 } // Actions
+    ]
+});
+
+// External search
+$('#searchInput').on('input', function () {
+    table.search(this.value).draw();
+});
+
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    /* ==========================
+       FORM VALIDATION (ADD + EDIT)
+    ========================== */
+    const driverForm = document.getElementById("driverForm");
+
+    if (driverForm) {
+        driverForm.addEventListener("submit", function (e) {
+
+            const dob = new Date(document.getElementById("dob").value);
+            const expiry = new Date(document.getElementById("expiry_date").value);
+            const today = new Date();
+
+            const email = form.email.value.trim();
+            const contact = form.contact_number.value.trim();
+            const address = form.address.value.trim();
+            
+            const errorBox = document.getElementById("formError");
+
+            errorBox.classList.add("d-none");
+            errorBox.innerText = "";
+
+            // Age validation (>= 17)
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+
+            if (age < 17) {
+                e.preventDefault();
+                errorBox.innerText = "Driver must be at least 17 years old.";
+                errorBox.classList.remove("d-none");
+                return;
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                e.preventDefault();
+                errorBox.innerText = "Please enter a valid email address.";
+                errorBox.classList.remove("d-none");
+                return;
+            }
+
+
+            const contactRegex = /^07\d{9}$/;
+
+            if (!contactRegex.test(contact)) {
+                e.preventDefault();
+                errorBox.innerText = "Enter a valid UK mobile number starting with 07 (11 digits).";
+                errorBox.classList.remove("d-none");
+                return;
+            }
+
+
+            if (address.length < 10) {
+                e.preventDefault();
+                errorBox.innerText = "Address must be at least 10 characters.";
+                errorBox.classList.remove("d-none");
+                return;
+            }
+
+            // Expiry date validation
+            if (expiry <= today) {
+                e.preventDefault();
+                errorBox.innerText = "Licence expiry date must be in the future.";
+                errorBox.classList.remove("d-none");
+                return;
+            }
+
+            // At least one category
+            const checked = document.querySelectorAll(".category-checkbox:checked");
+            if (checked.length === 0) {
+                e.preventDefault();
+                errorBox.innerText = "Please select at least one licence category.";
+                errorBox.classList.remove("d-none");
+                return;
+            }
+        });
+    }
+
+    /* ==========================
+       ADD / EDIT MODAL LOGIC
+    ========================== */
+    const modalEl = document.getElementById('driverModal');
+    const modal = new bootstrap.Modal(modalEl);
+
+    const form = document.getElementById("driverForm");
+    const title = document.getElementById("driverModalTitle");
+    const submitBtn = document.getElementById("submitBtn");
+    const driverIdInput = document.getElementById("driver_id");
+
+    function resetDriverForm() {
+        form.reset();
+        driverIdInput.value = "";
+
+        document.querySelectorAll(".category-checkbox")
+            .forEach(cb => cb.checked = false);
+
+        title.innerText = "Create Driver & Licence Details";
+        submitBtn.innerText = "Save";
+        form.action = form.dataset.createUrl;
+    }
+
+    const addBtn = document.querySelector('[data-bs-target="#driverModal"]');
+    if (addBtn) {
+        addBtn.addEventListener("click", resetDriverForm);
+    }
+
+    document.querySelectorAll(".editDriverBtn").forEach(btn => {
+        btn.addEventListener("click", function () {
+
+            const data = JSON.parse(this.dataset.driver);
+
+            form.first_name.value = data.first_name;
+            form.last_name.value = data.last_name;
+            form.dob.value = data.dob;
+            form.contact_number.value = data.contact_number;
+            form.email.value = data.email;
+            form.address.value = data.address;
+
+            form.licence_number.value = data.licence_number;
+            form.issue_date.value = data.issue_date;
+            form.expiry_date.value = data.expiry_date;
+
+            document.querySelectorAll(".category-checkbox").forEach(cb => {
+                cb.checked = data.categories.includes(cb.value);
+            });
+
+            driverIdInput.value = data.id;
+            title.innerText = "Update Driver & Licence Details";
+            submitBtn.innerText = "Update";
+            form.action = `/driver/${data.id}/update/`;
+
+            modal.show();
+        });
+    });
+
+});
+
+document.querySelectorAll(".viewLogsBtn").forEach(btn => {
+    btn.addEventListener("click", function () {
+
+        const driverId = this.dataset.driverId;
+        const licenceId = this.dataset.licenceId;
+        const logsList = document.getElementById("logsList");
+
+        const downloadBtn = document.getElementById("downloadLogsBtn");
+        downloadBtn.href =
+            `/driver/logs/download/?driver_id=${driverId}&licence_id=${licenceId}`;
+
+        logsList.innerHTML = `
+            <li class="list-group-item text-muted text-center">
+                Loading...
+            </li>
+        `;
+
+        fetch(`/driver/logs/?driver_id=${driverId}&licence_id=${licenceId}`)
+            .then(res => res.json())
+            .then(data => {
+
+                if (!data.logs.length) {
+                    logsList.innerHTML = `
+                        <li class="list-group-item text-muted text-center">
+                            No activity found
+                        </li>
+                    `;
+                    return;
+                }
+
+                logsList.innerHTML = "";
+
+                data.logs.forEach(log => {
+
+                    let text = `
+                        <strong>${log.time}</strong><br>
+                        <span class="text-primary">
+                            ${log.model} (${log.driver_name} – ${log.licence_number})
+                        </span>
+                        <br>
+                    `;
+
+                    if (log.action === "CREATE") {
+                        text += `
+                            created<br>
+                        `;
+                    } else if (log.action === "UPDATE") {
+                        text += `
+                            updated<br>
+                            <small class="text-muted">
+                                ${log.field}: "${log.old}" → "${log.new}"
+                            </small><br>
+                        `;
+                    } else if (log.action === "DELETE") {
+                        text += `
+                            deleted<br>
+                        `;
+                    }
+
+                    text += `
+                        <small>by <strong>${log.user}</strong></small>
+                    `;
+
+                    logsList.innerHTML += `
+                        <li class="list-group-item">
+                            ${text}
+                        </li>
+                    `;
+                });
+            });
+
+        new bootstrap.Modal(
+            document.getElementById("logsModal")
+        ).show();
+    });
+});
+
+
+
+
+</script>
+
+
+
+</body>
+</html>

@@ -380,18 +380,7 @@
                         <td>{{ vehicle.vrn }}</td>
                         <td>{{ vehicle.make }}</td>
                         <td>{{ vehicle.model }}</td>
-                        <!--  MOT -->
-                        <!-- <td>
-                            {% if vehicle.mot_status %}
-                                {% if vehicle.mot_status|lower == 'valid' %}
-                                    <span class="status-pill status-pass">Pass</span>
-                                {% else %}
-                                    <span class="status-pill status-fail">Fail</span>
-                                {% endif %}
-                            {% else %}
-                                N/A
-                            {% endif %}
-                        </td> -->
+                
 
                         <td>
                             {% if vehicle.mot_status %}
@@ -408,7 +397,7 @@
                         </td>
 
 
-                        <td
+                        <td class="{% if vehicle.mot_expiry_date and vehicle.mot_expiry_date < today %}text-danger{% endif %}"
                             {% if vehicle.mot_expiry_date %}
                                 data-order="{{ vehicle.mot_expiry_date|date:'Y-m-d' }}"
                             {% else %}
@@ -432,7 +421,7 @@
                         </td>
 
 
-                        <td
+                        <td class="{% if vehicle.tax_due_date and vehicle.tax_due_date < today %}text-danger{% endif %}"
                             {% if vehicle.tax_due_date %}
                                 data-order="{{ vehicle.tax_due_date|date:'Y-m-d' }}"
                             {% else %}

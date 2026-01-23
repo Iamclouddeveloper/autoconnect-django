@@ -1,0 +1,348 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Console</title>
+    <link rel="stylesheet" href="{% static 'bootstrap/bootstrap.min.css' %}">
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+   
+    <link rel="stylesheet"
+          href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+    
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        
+                
+        
+        /* TABLE */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            border:1px solid #e0e0e0;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px !important;
+            text-align: left !important;
+        }
+        th {
+            background: var(--primary);
+            color: #fff;
+        }
+        tr:nth-child(even) { background: #eef2f6   !important; }
+        
+        tr:hover { background: #e6f0f7 !important; }
+
+                
+        .dataTables_wrapper .dataTables_filter input,
+        .dataTables_wrapper .dataTables_length select {
+            border-radius: 8px;
+            border: 1px solid var(--border-light );
+            padding: 4px 8px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            border-radius: 8px !important;
+            padding: 4px 10px;
+            margin: 2px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: linear-gradient(
+            135deg,
+            var(--primary) 0%,
+            var(--primary-dark) 100%
+        );
+            color: #fff !important;
+            border: none !important;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #e0f2fe !important;
+            color: #0f172a !important;
+        }
+
+        /* ===============================
+        SORT ICON SPACING
+        ================================ */
+        .dataTables_wrapper .sorting::before,
+        .dataTables_wrapper .sorting::after {
+            display: block;
+            margin: 4px 0;
+        }
+        /* Hide sort icons for disabled columns */
+        #usersTable th.sorting_disabled::before,
+        #usersTable th.sorting_disabled::after {
+            display: none !important;
+        }
+
+
+    </style>
+</head>
+<body  style="background: linear-gradient(135deg, #e0f2fe, #f8fafc);">
+
+{% include 'side_navbar.html' %}
+
+<div class="container mt-4">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body d-flex align-items-center gap-3">
+            {% if user_obj.profile_photo %}
+                <img src="{{ user_obj.profile_photo.url }}" class="rounded-circle" width="60">
+            {% else %}
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                     style="width:60px;height:60px;">
+                    <i class="fa fa-user fa-lg"></i>
+                </div>
+            {% endif %}
+
+            <div>
+                <h5 class="mb-0">{{ user_obj.get_full_name|default:user_obj.username }}</h5>
+                <small class="text-muted">{{ user_obj.email }}</small><br>
+                <span class="badge " style=" background: linear-gradient(135deg, #2563eb, #1e40af);">{{ user_obj.role }}</span>
+                 <small class="text-muted d-block mt-3">
+                    <i class="fa fa-car text-success me-1"></i>
+                    {{ total_vehicles }} Vehicles
+                    <span class="mx-2">•</span>
+                    <i class="fa fa-route text-primary me-1"></i>
+                    {{ total_trips }} Trips
+                    <span class="mx-2">•</span>
+                    <i class="fa fa-id-card me-1" style="color:var(--primary);"></i>
+                    {{ total_drivers }} Drivers
+                </small>
+            </div>
+
+            
+        </div>
+        
+    </div>
+</div>
+
+
+
+<div class="container mb-5">
+    <div class="row g-4">
+
+        <!-- Vehicles Table -->
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="mb-3">Vehicles</h5>
+
+                    <div class="table-responsive">
+                        <div class="input-container mb-3">
+                            <i class="fa fa-search" aria-hidden="true"></i>
+                            <input type="text" id="VehiclesearchInput" class="form-control  px-5 w-100" placeholder="Search...">
+                        </div>
+                        <table id="vehiclesTable">
+                            <thead>
+                                <tr>
+                                    <th>VRN</th>
+                                    <th>MOT Expiry</th>
+                                    <th>Tax Due</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for v in vehicles %}
+                                <tr>
+                                    <td>{{ v.vrn }}</td>
+                                    <td class="{% if v.mot_expiry_date and v.mot_expiry_date < today %}text-danger{% endif %}" data-order="{{ v.mot_expiry_date|date:'Y-m-d' }}">{{ v.mot_expiry_date|date:"d M Y"|default:"N/A" }}</td>
+                                    <td class="{% if v.tax_due_date and v.tax_due_date < today %}text-danger{% endif %}" data-order="{{ v.tax_due_date|date:'Y-m-d' }}">{{ v.tax_due_date|date:"d M Y"|default:"N/A" }}</td>
+                                    <td>{{ v.created_at|date:"d M Y" }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Trips Table -->
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm h-100" >
+                <div class="card-body">
+                    <h5 class="mb-3">Trips</h5>
+
+                    <div class="table-responsive">
+                        <div class="input-container mb-3">
+                            <i class="fa fa-search" aria-hidden="true"></i>
+                            <input type="text" id="TripsearchInput" class="form-control  px-5 w-100" placeholder="Search...">
+                        </div>
+                        <table id="tripsTable">
+                            <thead>
+                                <tr>
+                                    <th>Vehicle</th>
+                                    <th>Start</th>
+                                    <th>End</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for t in trips %}
+                                <tr>
+                                    <td>{{ t.vehicle.vrn }}</td>
+                                    <td>{{ t.start }}</td>
+                                    <td>{{ t.end|default:"—" }}</td>
+                                    <td data-order="{{ t.created_at|date:'Y-m-d H:i:s' }}">{{ t.created_at|date:"d M Y H:i" }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="mb-3">
+                        Drivers
+                    </h5>
+
+                    <div class="table-responsive">
+                        <div class="input-container mb-3">
+                            <i class="fa fa-search"></i>
+                            <input type="text"
+                                id="DriversearchInput"
+                                class="form-control px-5 w-100"
+                                placeholder="Search drivers...">
+                        </div>
+
+                        <table id="driversTable">
+                            <thead>
+                                <tr>
+                                    <th>Driver</th>
+                                    <th>Licence Number</th>
+                                    <th>Expiry Date</th>
+                                    <th>Category</th>
+                                    <th>Status</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for d in drivers %}
+                                <tr>
+                                    <td>{{ d.first_name }} {{ d.last_name }}</td>
+
+                                    <td>
+                                        {{ d.licence.licence_number|default:"—" }}
+                                    </td>
+
+                                    <td class="{% if d.licence.expiry_date and d.licence.expiry_date < today %}text-danger{% endif %}" data-order="{{ d.licence.expiry_date|date:'Y-m-d' }}">
+                                        {{ d.licence.expiry_date|date:"d M Y"|default:"—" }}
+                                    </td>
+
+                                    <td>
+                                        {% if d.licence %}
+                                            {% for c in d.licence.categories.all %}
+                                                <span class="badge bg-primary">{{ c.category_code }}</span>
+                                            {% empty %}
+                                                —
+                                            {% endfor %}
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <span class="badge bg-{{ d.status|yesno:'success,secondary' }}">
+                                            {{ d.status|title }}
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        {{ d.created_at|date:"d M Y" }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+
+
+
+    
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="{% static 'bootstrap/bootstrap.bundle.min.js' %}"></script>
+
+<script>
+$(document).ready(function () {
+
+ 
+    const vehiclesTable = $('#vehiclesTable').DataTable({
+        pageLength: 5,
+        lengthChange: false,
+        responsive: true,
+        info: true,
+        searching: true,
+        dom: 'rt<"bottom"ip>', // removes default search box
+    });
+
+    
+    const tripsTable = $('#tripsTable').DataTable({
+        pageLength: 5,
+        lengthChange: false,
+        responsive: true,
+        info: true,
+        order: [[3, "desc"]],
+        searching: true,
+        dom: 'rt<"bottom"ip>', // removes default search box
+    });
+
+    // Custom search for Vehicles
+    $('#VehiclesearchInput').on('keyup', function () {
+        vehiclesTable.search(this.value).draw();
+    });
+
+    // Custom search for Trips
+    $('#TripsearchInput').on('keyup', function () {
+        tripsTable.search(this.value).draw();
+    });
+
+    const driversTable = $('#driversTable').DataTable({
+        pageLength: 5,
+        lengthChange: false,
+        responsive: true,
+        info: true,
+        searching: true,
+        order: [[5, "desc"]],
+        dom: 'rt<"bottom"ip>',
+    });
+
+    // Custom search
+    $('#DriversearchInput').on('keyup', function () {
+        driversTable.search(this.value).draw();
+    });
+
+
+});
+
+</script>
+
+
+</body>
+</html>

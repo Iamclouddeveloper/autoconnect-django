@@ -137,14 +137,83 @@
         </div>
     </div>
 
+{% if request.user.role == 'super_admin' %}
+    <div class="container my-4">
+        <div class="row g-3">
+
+            <!-- Total Users -->
+            <div class="col-md-3 col-6">
+                <div class="stat-card shadow-sm border-0 ">
+                    <div class="stat-card-body d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Users</p>
+                            <h3 class="fw-bold mb-0">{{ analytics.total_users }}</h3>
+                        </div>
+                        <div class="icon bg-primary-subtle text-primary rounded-circle">
+                            <i class="fa fa-users fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Vehicles -->
+            <div class="col-md-3 col-6">
+                <div class="stat-card shadow-sm border-0"  >
+                    <div class="stat-body d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Vehicles</p>
+                            <h3 class="fw-bold mb-0">{{ analytics.total_vehicles }}</h3>
+                        </div>
+                        <div class="icon bg-success-subtle text-success rounded-circle">
+                            <i class="fa fa-car fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Drivers -->
+            <div class="col-md-3 col-6">
+                <div class="stat-card shadow-sm border-0 ">
+                    <div class="stat-body d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Drivers</p>
+                            <h3 class="fw-bold mb-0">{{ analytics.total_drivers }}</h3>
+                        </div>
+                        <div class="icon bg-warning-subtle text-warning rounded-circle">
+                            <i class="fa fa-id-card fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Trips -->
+            <div class="col-md-3 col-6">
+                <div class="stat-card shadow-sm border-0">
+                    <div class="stat-body d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Trips</p>
+                            <h3 class="fw-bold mb-0">{{ analytics.total_trips }}</h3>
+                        </div>
+                        <div class="icon bg-info-subtle text-info rounded-circle">
+                            <i class="fa fa-route fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    {% endif %}
+
 <div class="container card my-3 py-4 rounded-3">
 
      <h1 style="text-align: center;" class="d-md-none">Admin Dashboard</h1>
 
+
     <div class="input-container mb-3">
             <i class="fa fa-search" aria-hidden="true"></i>
             <input type="text" id="searchInput" class="form-control  px-5 w-100" placeholder="Search...">
-       </div>
+    </div>
     <div class="table-responsive">
         
         {% if request.user.role == 'super_admin' %}
@@ -188,10 +257,24 @@
                     <input type="checkbox" class="userCheck" value="{{ user.id }}">
                 </td>
                 {% endif %}
-
                 
+
+                {% if request.user.role == 'super_admin' %}
+                <td class="username">
+                    <a href="{% url 'admin_user_detail' user.id %}" class="fw-bold  text-decoration-none" style="color:#3a5f7d;">
+                        {{ user.username }}
+                    </a>
+                </td>
+                
+                <td class="email">
+                    <a href="{% url 'admin_user_detail' user.id %}" class="fw-bold  text-decoration-none" style="color:#3a5f7d;">
+                        {{ user.email }}
+                    </a>
+                </td>
+                {%else%}
                 <td class="username">{{ user.username }}</td>
                 <td class="email">{{ user.email }}</td>
+                {%endif%}
 
                 {% if request.user.role == 'super_admin' %}
                     <td class="role">{{ user.role }}</td>
@@ -214,7 +297,7 @@
                 </td>
 
                 <td data-order="{{ user.date_joined|date:'Y-m-d H:i:s' }}">{{ user.date_joined|date:"d-M-Y h:i A" }}</td>
-                <td data-order="{{ user.date_joined|date:'Y-m-d H:i:s' }}">{{ user.last_login|date:"d-M-Y h:i A" }}</td>
+                <td data-order="{{ user.last_login|date:'Y-m-d H:i:s' }}">{{ user.last_login|date:"d-M-Y h:i A" }}</td>
                 <td class="text-nowrap">
                     <form action="{% url 'toggle_block_user' user.id %}" method="POST" style="display:inline;">
                         {% csrf_token %}
