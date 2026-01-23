@@ -2002,8 +2002,11 @@ def read_log_file(filename):
     
 
 
-
+@login_required
 def vehicle_logs_view(request):
+    if request.user.role not in ['super_admin', 'sub_admin']:
+        return redirect('profile')
+
     """
     Page with dropdown + table
     """
@@ -2013,7 +2016,6 @@ def vehicle_logs_view(request):
         "files": files,
         "latest_file": files[0] if files else None
     })
-
 
 def vehicle_logs_api(request):
     """
