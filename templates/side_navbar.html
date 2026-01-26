@@ -84,7 +84,11 @@
             </a>
             <a href="{% url 'vehicle_logs' %}"
               class="{% if request.resolver_match.url_name == 'vehicle_logs' %}active{% endif %}">
-              Log View
+              Vehicle Log View
+            </a>
+             <a href="{% url 'email_logs_view' %}"
+              class="{% if request.resolver_match.url_name == 'email_logs_view' %}active{% endif %}">
+              Email Reminder Log View
             </a>
             {% else%}
             <a href="{% url 'my_vehicle' %}"

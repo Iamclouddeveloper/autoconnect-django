@@ -2029,3 +2029,58 @@ def vehicle_logs_api(request):
     data = read_log_file(filename)
     return JsonResponse({"data": data})
 
+
+
+
+# Base dir for email event logs
+JSON_LOG_DIR = os.path.join(settings.BASE_DIR, "logs", "email_events")
+
+
+def get_email_log_files():
+    """
+    Returns email log files sorted latest first
+    """
+    if not os.path.exists(JSON_LOG_DIR):
+        return []
+
+    return sorted(
+        [f for f in os.listdir(JSON_LOG_DIR) if f.endswith(".json")],
+        reverse=True
+    )
+
+
+def read_email_log_file(filename):
+    path = os.path.join(JSON_LOG_DIR, filename)
+
+    if not os.path.exists(path):
+        return []
+
+    with open(path, "r") as f:
+        return json.load(f)
+
+
+@login_required
+def email_logs_view(request):
+    if request.user.role not in ['super_admin', 'sub_admin']:
+        return redirect('profile')
+
+    
+    files = get_email_log_files()
+
+    return render(request, "email_logs.html", {
+        "files": files,
+        "latest_file": files[0] if files else None
+    })
+
+
+def email_logs_api(request):
+    """
+    Ajax endpoint to load selected email log file
+    """
+    filename = request.GET.get("file")
+
+    if not filename:
+        return JsonResponse({"data": []})
+
+    data = read_email_log_file(filename)
+    return JsonResponse({"data": data})

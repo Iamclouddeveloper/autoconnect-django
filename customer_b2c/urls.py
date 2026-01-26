@@ -45,6 +45,8 @@ from .views import (
     user_detail,
     vehicle_logs_view,
     vehicle_logs_api,
+    email_logs_api,
+    email_logs_view,
 )
 
 urlpatterns = [
@@ -119,8 +121,10 @@ urlpatterns = [
     ),
     path("driver/logs/download/", download_driver_logs, name="download_driver_logs"),
     path('users/<int:user_id>/', user_detail, name='admin_user_detail'),
-     path("vehicle-logs/", vehicle_logs_view, name="vehicle_logs"),
+    path("vehicle-logs/", vehicle_logs_view, name="vehicle_logs"),
     path("vehicle-logs/api/", vehicle_logs_api, name="vehicle_logs_api"),
+    path("reminder-email-logs/", email_logs_view, name="email_logs_view"),
+    path("reminder-email-logss/api/", email_logs_api, name="email_logs_api"),
 
 
 

@@ -105,8 +105,7 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h2 class="text-center">Vehicle Update Logs</h2>
-                    
+                    <h2 class="text-center">Email Reminder Logs</h2>                    
 
                     <label><b>Select Log Date:</b></label>
                     <select id="logFileSelect">
@@ -118,85 +117,20 @@
 
                     <hr>
 
-                        <div class="row g-3 mb-4" id="logStats">
-
-    <!-- Total VRNs -->
-    <div class="col-md-3 col-6">
-        <div class="stat-card shadow-sm border-0 clickable" data-filter="all">
-            <div class="stat-card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <p class="text-muted mb-1 small">Total VRNs</p>
-                    <h3 class="fw-bold mb-0" id="stat-total">0</h3>
-                </div>
-                <div class="icon bg-primary-subtle text-primary rounded-circle">
-                    <i class="fa fa-car fa-lg"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MOT Changes -->
-    <div class="col-md-3 col-6">
-        <div class="stat-card shadow-sm border-0 clickable" data-filter="mot">
-            <div class="stat-card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <p class="text-muted mb-1 small">MOT Changes</p>
-                    <h3 class="fw-bold mb-0" id="stat-mot">0</h3>
-                </div>
-                <div class="icon bg-success-subtle text-success rounded-circle">
-                    <i class="fa fa-check-circle fa-lg"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tax Changes -->
-    <div class="col-md-3 col-6">
-        <div class="stat-card shadow-sm border-0 clickable" data-filter="tax">
-            <div class="stat-card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <p class="text-muted mb-1 small">Tax Changes</p>
-                    <h3 class="fw-bold mb-0" id="stat-tax">0</h3>
-                </div>
-                <div class="icon bg-warning-subtle text-warning rounded-circle">
-                    <i class="fa fa-file-invoice fa-lg"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- VRN Not Found -->
-    <div class="col-md-3 col-6">
-        <div class="stat-card shadow-sm border-0 clickable" data-filter="invalid">
-            <div class="stat-card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <p class="text-muted mb-1 small">VRN Not Found</p>
-                    <h3 class="fw-bold mb-0" id="stat-invalid">0</h3>
-                </div>
-                <div class="icon bg-danger-subtle text-danger rounded-circle">
-                    <i class="fa fa-exclamation-triangle fa-lg"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-</div>
-
                     <div class="input-container my-3">
                             <i class="fa fa-search" aria-hidden="true"></i>
                             <input type="text" id="vehicleLogSearch" class="form-control  px-5 w-100" placeholder="Search...">
                     </div>
                     <div class="table-responsive">
-                        <table id="logsTable">
+                        <table id="emailLogsTable">
                             <thead>
                                 <tr>
                                     <th>Date & Time</th>
                                     <th>VRN</th>
-                                    <th>DVSA API</th>
-                                    <th>DVLA API</th>
-                                    <th>MOT Changes</th>
-                                    <th>Tax Changes</th>
-                                    <th>Remarks</th>
+                                    <th>Send To</th>
+                                    <th>Type</th>
+                                    <th>Expiry Date</th>
+                                    <th>Status</th>
                                 </tr>
                             </thead>
                         </table>
@@ -244,7 +178,7 @@ function formatShortDate(value) {
 }
 
 
-const table = $('#logsTable').DataTable({
+const emailTable = $('#emailLogsTable').DataTable({
     order: [[0, "desc"]],
     pageLength: 10,
     lengthChange: false,
@@ -259,66 +193,35 @@ const table = $('#logsTable').DataTable({
                     ? new Date(d).getTime()
                     : formatDateTime(d)
         },
-        { data: "vrn" },
-
         {
-            data: "dvsa_api_called",
-            render: d => d
-                ? '<span class="badge-yes">Yes</span>'
-                : '<span class="badge-no">No</span>'
+            data: "vrn",
+            defaultContent: '-'
         },
         {
-            data: "dvla_api_called",
-            render: d => d
-                ? '<span class="badge-yes">Yes</span>'
-                : '<span class="badge-no">No</span>'
+            data: "to",
+            defaultContent: '-'
         },
-
         {
-            data: "mot_changes",
-            render: d => {
-                if (!d || !d.changed)
-                    return '<span class="badge-no">No</span>';
-                if (d.changed === "N/A")
-                   return '<span class="badge-no">N/A</span>';
-
-                return `
-                    <span class="badge-yes">Yes</span>
-                    <span class="change-span">${d.old_status} → ${d.new_status}</span>
-                    <span class="change-span">${formatShortDate(d.old_expiry)} → ${formatShortDate(d.new_expiry)}</span>
-                `;
-            }
+            data: "reminder_type",
+            defaultContent: '-'
         },
-
         {
-            data: "tax_changes",
-            render: d => {
-                if (!d || !d.changed)
-                    return '<span class="badge-no">No</span>';
-                 if (d.changed === "N/A")
-                    return '<span class="badge-no">N/A</span>';
-
-                return `
-                    <span class="badge-yes">Yes</span>
-                    <span class="change-span">${d.old_status} → ${d.new_status}</span>
-                    <span class="change-span">${formatShortDate(d.old_due)} → ${formatShortDate(d.new_due)}</span>
-                `;
-            }
+            data: "expiry_date",
+            defaultContent: '-'
         },
-
         {
-            data: "remarks",
-            render: d => `
-                <div>DVSA: ${d?.dvsa ?? '-'}</div>
-                <div>DVLA: ${d?.dvla ?? '-'}</div>
-            `
+            data: "status",
+            render: d =>
+                d === 'sent'
+                    ? '<span class="badge-yes">Sent</span>'
+                    : '<span class="badge-no">Failed</span>'
         }
     ]
-    
 });
 
+
 $('#vehicleLogSearch').on('keyup', function () {
-        table.search(this.value).draw();
+        emailTable.search(this.value).draw();
     });
 
 function formatFilename(filename) {
@@ -338,14 +241,17 @@ function formatFilename(filename) {
 }
 
 
-function loadLogFile(file) {
-    $.get("{% url 'vehicle_logs_api' %}", { file }, function (resp) {
-        table.clear().rows.add(resp.data).draw();
-        updateStats(resp.data);
+function loadEmailLogFile(file) {
+    $.get("{% url 'email_logs_api' %}", { file }, function (resp) {
+
+        // REMOVE no_pending rows
+        const filtered = resp.data.filter(
+            row => row.status !== 'no_pending'
+        );
+
+        emailTable.clear().rows.add(filtered).draw();
     });
 }
-
-
 
 $(document).ready(function () {
 
@@ -357,80 +263,20 @@ $(document).ready(function () {
         }
     });
 
-    // Load latest file
+    // Load latest file ONCE
     let latestFile = "{{ latest_file }}";
     if (latestFile) {
         $('#logFileSelect').val(latestFile);
-        loadLogFile(latestFile);
+        loadEmailLogFile(latestFile);
     }
-
-    //  LOAD  DROPDOWN CHANGES
-    $('#logFileSelect').on('change', function () {
-        let file = $(this).val();
-        if (file) loadLogFile(file);
-    });
 });
 
-
-let lastLoadedData = [];
-
-function updateStats(data) {
-    lastLoadedData = data;
-
-    let total = data.length;
-    let mot = 0;
-    let tax = 0;
-    let invalid = 0;
-
-    data.forEach(row => {
-        if (row.mot_changes?.changed === true) mot++;
-        if (row.tax_changes?.changed === true) tax++;
-
-
-        if (
-            row.remarks?.dvsa?.includes('404') ||
-            row.remarks?.dvla?.includes('404')
-        ) {
-            invalid++;
-        }
-    });
-
-    $('#stat-total').text(total);
-    $('#stat-mot').text(mot);
-    $('#stat-tax').text(tax);
-    $('#stat-invalid').text(invalid);
-}
-
-$.fn.dataTable.ext.search.push(function (settings, data, index, rowData) {
-
-    if (!window.activeCardFilter || window.activeCardFilter === 'all') {
-        return true;
+// Dropdown change
+$('#logFileSelect').on('change', function () {
+    let file = $(this).val();
+    if (file) {
+        loadEmailLogFile(file);
     }
-
-    if (window.activeCardFilter === 'mot') {
-        return rowData.mot_changes?.changed === true;
-    }
-
-    if (window.activeCardFilter === 'tax') {
-        return rowData.tax_changes?.changed === true;
-    }
-
-    if (window.activeCardFilter === 'invalid') {
-        return (
-            rowData.remarks?.dvsa?.includes('404') ||
-            rowData.remarks?.dvla?.includes('404')
-        );
-    }
-
-    return true;
-});
-
-
-window.activeCardFilter = 'all';
-
-$('.stat-card').on('click', function () {
-    window.activeCardFilter = $(this).data('filter');
-    table.draw();
 });
 
 
